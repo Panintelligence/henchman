@@ -1,0 +1,5 @@
+{
+  "token": "NDk4ODU5OTcwOTk0MTEwNDY1.Dpz4FQ.wR3ECuAmjENz_QoXLU8hbmDYBNY",
+  "roleWhitelist": ["Developers", "DevOps", "Testers"],
+  "channelWhitelist": ["dev", "test"]
+}

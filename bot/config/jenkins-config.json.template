@@ -1,0 +1,13 @@
+{
+    "protocol": "https", //or http
+    "host": "your.host.name",
+    "project": "your-project",
+    "user": "your-jenkins-user",
+    "token": "your-jenkins-token",
+    "defaultBranch": "master",
+    "defaultBuildParams": [
+        { "name": "STRING_PARAM", "value": "string value" },
+        { "name": "STRING_PARAM_WITH_VARIABLE", "value": "[[variable]]" },
+        { "name": "BOOLEAN_PARAM", "value": true }
+      ]
+}

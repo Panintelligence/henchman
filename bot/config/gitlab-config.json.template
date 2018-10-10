@@ -1,0 +1,6 @@
+{
+  "protocol": "https",
+  "host": "your.host.here",
+  "projectId": 0,
+  "token": "your-gitlab-token"
+}

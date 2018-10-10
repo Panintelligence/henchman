@@ -1,0 +1,13 @@
+{
+  "name": "builder-bot",
+  "version": "1.0.0",
+  "description": "This bot starts a build everytime someone asks for a build to be made",
+  "main": "bot.js",
+  "author": "Tiago \"Dosaki\" Correia",
+  "dependencies": {
+    "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+    "querystring": "^0.2.0",
+    "request": "^2.88.0",
+    "winston": "^3.1.0"
+  }
+}
