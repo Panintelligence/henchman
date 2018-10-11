@@ -37,12 +37,15 @@ const makeGitlabRequest = (method, path, body, callback, onRequest) => {
 
 const gitlab = {
   branchList: (filter, msgInfo, callback) => {
+    chat(msgInfo.bot, msgInfo.channelID, `Hold on while I try to find out, <@${msgInfo.userID}>...`);
     makeGitlabRequest('GET', `/api/v4/projects/${gitlabConfig.projectId}/repository/branches?per_page=999999999`, null, callback || ((branchesString) => {
       const branches = JSON.parse(branchesString);
       const branchNames = branches.filter((b) => { return filter ? b.name.indexOf(filter) !== -1 : true; }).map((b) => { return b.name; })
       if (msgInfo) {
         if (branchNames.length > 10) {
           chat(msgInfo.bot, msgInfo.channelID, `There's lots of branches, <@${msgInfo.userID}>! I've sent you a PM.`);
+          chat(msgInfo.bot, msgInfo.userID, `Here's what I found:
+${branchNames.join('\n')}`);
         }
         else {
           chat(msgInfo.bot, msgInfo.channelID, `Here's what I found, <@${msgInfo.userID}>:

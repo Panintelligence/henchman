@@ -1,3 +1,5 @@
 node_modules
 **/*-config.json
+**/*.prod.json
+**/*.test.json
 notes.md

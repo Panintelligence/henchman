@@ -1,6 +1,14 @@
 # Jenkins Builder bot for Discord
 A bot that lets you communicate with Jenkins on Discord
 
+# Set up
+1. Create a discord app with a bot: https://discordapp.com/developers/applications/
+2. Click **"Bot"** on the side pannel and add a bot
+3. Get the token (to use in `discord-config.json`)
+4. Go back to **"General Information"** and get the **"Client ID"**
+5. Go to: `https://discordapp.com/oauth2/authorize?&client_id=YOURCLIENTID&scope=bot&permissions=216064`
+Where `client_id` is your bot's client ID
+
 # Usage
 Commands:
   * `!poke` - check if I'm around.

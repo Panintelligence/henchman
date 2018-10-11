@@ -5,7 +5,9 @@
   "main": "bot.js",
   "author": "Tiago \"Dosaki\" Correia",
   "dependencies": {
+    "cryptr": "^4.0.0",
     "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+    "prompt": "^1.0.0",
     "querystring": "^0.2.0",
     "request": "^2.88.0",
     "winston": "^3.1.0"
