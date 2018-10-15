@@ -2,6 +2,7 @@
 
 const discordConfig = require('./config/discord-config.json');
 const jenkinsConfig = require('./config/jenkins-config.json');
+const jiraConfig = require('./config/jira-config.json');
 
 const Discord = require('discord.io');
 const logger = require('winston');
@@ -93,11 +94,15 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
   }, null, "Check if I'm around");
 
+  unprotectedCommand(msgInfo, [`!${jiraConfig.projectCode}`], new RegExp(`^(?!.*http).*(${jiraConfig.projectCode}-[0-9]+)`),
+    (info, command, match) => {
+      chat(bot, channelID, `Jira Link: ${jiraConfig.protocol}://${jiraConfig.host}/browse/${match[1]}`);
+    }, "<number>", `I will attempt to link any Jira issues starting with ${jiraConfig.projectCode}`);
+
   unprotectedCommand(msgInfo, ['!away', '!holiday'], /.* *Who('s| is) (out( of( the|) office| off|)|on holiday) *(|today|tomorrow|this week|next week)\?/i,
     (info, command, match) => {
       if (info.message.indexOf(command) !== -1 || (match)) {
         const commandArgs = info.message.split(command);
-        console.log(commandArgs)
         const param = (commandArgs.length > 1 ? commandArgs[1] : match[5]).trim().toLowerCase() || null;
 
         if (!param || param === "today") {
@@ -142,16 +147,16 @@ bot.on('message', (user, userID, channelID, message, evt) => {
                 return dateRange.start <= new Date(p['EventEnd']) && dateRange.end >= new Date(p['EventStart']);
               })
               .reduce((acc, p) => {
-                const existingPerson = acc.find((a)=>{ return a['EmployeeId'] === p['EmployeeId'] });
-                if(!existingPerson){
+                const existingPerson = acc.find((a) => { return a['EmployeeId'] === p['EmployeeId'] });
+                if (!existingPerson) {
                   acc.push(p);
                 }
                 else {
-                  if(utils.date.isSameDay(existingPerson['EventStart'], p['EventEnd']) || utils.date.isSameDay(existingPerson['EventEnd'], p['EventStart'])){
+                  if (utils.date.isSameDay(existingPerson['EventStart'], p['EventEnd']) || utils.date.isSameDay(existingPerson['EventEnd'], p['EventStart'])) {
                     existingPerson['EventStart'] = utils.date.min(existingPerson['EventStart'], p['EventStart']);
                     existingPerson['EventEnd'] = utils.date.max(existingPerson['EventEnd'], p['EventEnd']);
                   }
-                  else{
+                  else {
                     acc.push(p);
                   }
                 }
