@@ -2,7 +2,7 @@
 
 const gitlabConfig = require('./config/gitlab-config.json');
 const http = require(gitlabConfig.protocol || 'https');
-const chat = require('./discord-chat')
+const chat = require('./discord-chat');
 
 const makeGitlabRequest = (method, path, body, callback, onRequest) => {
   return http.request({
@@ -45,7 +45,7 @@ const gitlab = {
         if (branchNames.length > 10) {
           chat(msgInfo.bot, msgInfo.channelID, `There's lots of branches, <@${msgInfo.userID}>! I've sent you a PM.`);
           chat(msgInfo.bot, msgInfo.userID, `Here's what I found:
-${branchNames.join('\n')}`);
+${branchNames.map((b)=>{return `  * \`${b}\``}).join('\n')}`);
         }
         else {
           chat(msgInfo.bot, msgInfo.channelID, `Here's what I found, <@${msgInfo.userID}>:

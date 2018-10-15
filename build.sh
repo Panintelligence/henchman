@@ -1,3 +1,5 @@
+#!/bin/bash
+
 CONFIG_DIR="/var/discordbot"
 IMAGE="discord-builder-bot"
 NAME="discord-builder-bot"

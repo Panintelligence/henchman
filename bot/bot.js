@@ -9,28 +9,16 @@ const Jenkins = require('./jenkins');
 const Gitlab = require('./gitlab');
 const Staffsquared = require('./staffsquared');
 const chat = require('./discord-chat')
+const utils = require('./utils')
 
 const WHITELISTED_ROLES = {};
 const WHITELISTED_CHANNELS = {};
-
-const intersectArray = (a, b) => {
-  return a.filter((e) => { b.includes(e) });
-};
-
-const stringStartsWithAny = (string, startingList) => {
-  for (let i in startingList) {
-    if (string.indexOf(startingList[i]) === 0) {
-      return startingList[i];
-    }
-  }
-  return null;
-}
 
 const helpCommands = {};
 
 const command = (info, bangCommands, regex, f) => {
   const match = regex ? info.message.match(regex) : null;
-  const bangCommand = stringStartsWithAny(info.message, bangCommands)
+  const bangCommand = utils.string.startsWithAny(info.message, bangCommands)
   if (bangCommand !== null || (match && match.length > 1)) {
     f(info, bangCommand, (match && match.length > 1) ? match : []);
   }
@@ -45,7 +33,7 @@ const unprotectedCommand = (info, bangCommands, regex, f, params, description) =
 const protectedCommand = (info, bangCommands, regex, f, params, description) => {
   const commands = bangCommands.map((c) => { return `\`${c}\`` }).join(" or ");
   helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''}- (protected) ${description}`;
-  if (intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)) {
+  if (utils.intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)) {
     command(info, bangCommands, regex, f);
   }
 };
@@ -89,6 +77,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
   if (userID === bot.id) {
     return;
   }
+
   logger.info(message);
 
   const msgInfo = {
@@ -104,12 +93,90 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
   }, null, "Check if I'm around");
 
-  unprotectedCommand(msgInfo, ['!away', '!holiday'], /.* *Who('s| is) out( of( the|) office| off|)\?/i, () => {
-    Staffsquared.absences(msgInfo, (absentees) => {
-      const absenteeNames = absentees.map((p) => { return p['FirstName'] + " " + p['LastName'] });
-      chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared only these people are off today:\n${absenteeNames.join('\n')}`);
-    });
-  }, null, "See who's off");
+  unprotectedCommand(msgInfo, ['!away', '!holiday'], /.* *Who('s| is) (out( of( the|) office| off|)|on holiday) *(|today|tomorrow|this week|next week)\?/i,
+    (info, command, match) => {
+      if (info.message.indexOf(command) !== -1 || (match)) {
+        const commandArgs = info.message.split(command);
+        console.log(commandArgs)
+        const param = (commandArgs.length > 1 ? commandArgs[1] : match[5]).trim().toLowerCase() || null;
+
+        if (!param || param === "today") {
+          Staffsquared.absencesToday(msgInfo, (absentees) => {
+            const absenteeNames = absentees.map((p) => { return ` * **${p['FirstName']} ${p['LastName']}**` });
+            if (absenteeNames.length > 0) {
+              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are off today:\n${absenteeNames.join('\n')}`);
+            }
+            else {
+              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared, nobody is off today.`);
+            }
+          });
+        }
+        else {
+          let dateRange
+          const midnightTodayDate = new Date();
+          midnightTodayDate.setHours(0);
+          midnightTodayDate.setMinutes(0);
+          midnightTodayDate.setSeconds(0);
+          midnightTodayDate.setMilliseconds(0);
+          console.log(`Today at Midnight: ${midnightTodayDate}`)
+          if (param === "tomorrow") {
+            dateRange = {
+              start: utils.date.addDays(midnightTodayDate, 1),
+              end: utils.date.addDays(midnightTodayDate, 2)
+            }
+          }
+          else {
+            if (param === "this week") {
+              dateRange = utils.date.getWeekRange(midnightTodayDate);
+            }
+            else if (param === "next week") {
+              dateRange = utils.date.getWeekRange(utils.date.addDays(midnightTodayDate, 8));
+            }
+            else {
+              return;
+            }
+          }
+          Staffsquared.absencesFuture(msgInfo, (absentees) => {
+            const absenteeNames = absentees
+              .filter((p) => {
+                return dateRange.start <= new Date(p['EventEnd']) && dateRange.end >= new Date(p['EventStart']);
+              })
+              .reduce((acc, p) => {
+                const existingPerson = acc.find((a)=>{ return a['EmployeeId'] === p['EmployeeId'] });
+                if(!existingPerson){
+                  acc.push(p);
+                }
+                else {
+                  if(utils.date.isSameDay(existingPerson['EventStart'], p['EventEnd']) || utils.date.isSameDay(existingPerson['EventEnd'], p['EventStart'])){
+                    existingPerson['EventStart'] = utils.date.min(existingPerson['EventStart'], p['EventStart']);
+                    existingPerson['EventEnd'] = utils.date.max(existingPerson['EventEnd'], p['EventEnd']);
+                  }
+                  else{
+                    acc.push(p);
+                  }
+                }
+                return acc;
+              }, [])
+              .map((p) => { return ` * **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})` });
+            if (absenteeNames.length > 0) {
+              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are off ${param}:\n${absenteeNames.join('\n')}`);
+            }
+            else {
+              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared, nobody is off ${param}.`);
+            }
+          });
+        }
+      }
+
+      // const absenteeNames = absentees.map((p) => {
+      //   return {
+      //     name: utils.string.capitalize(p['EmployeeEmail'].split('@')[0].split('.').join(' ')),
+      //     type: p['AbsenceType']
+      //   }
+      // });
+
+
+    }, "[|today|tomorrow|this week|next week]", "See who's off");
 
   protectedCommand(msgInfo, ['!release'], /.* *(((what|which|where)(\'s| is|)|have) (the|) release (branch|))/i,
     (info, command, match) => {
@@ -128,7 +195,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
         filter = (info.message.split(command)[1] || "").trim();
       }
       Gitlab.branchList(filter, msgInfo);
-    }, "[filter]", "I'll list all the branches in git. Optionally pass a filter to \"grep\" by");
+    }, "[|filter]", "I'll list all the branches in git. Optionally pass a filter to \"grep\" by");
 
 
   protectedCommand(msgInfo, ['!build'], /.* *(start) .* *(build) *((on|for|from|) *(`|)((?!please\b)\b\w+)(`|)|)/i,
@@ -137,7 +204,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       const branch = match[6] || b || jenkinsConfig.defaultBranch;
       chat(info.bot, info.channelID, `Sure, <@${info.userID}>. I've asked Jenkins to build from \`${branch}\`.`);
       Jenkins.requestBuild(branch, msgInfo);
-    }, "[branch]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);
+    }, "[|branch]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);
 
   protectedCommand(msgInfo, ['!cancel'], /.* *(cancel) .* *(build|queue) *(`|)((?!please\b)\b\w+)(`|)/i,
     (info, command, match) => {
@@ -162,7 +229,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
           chat(info.bot, info.channelID, `I've cancelled build number ${number}, <@${info.userID}>.`);
         });
       }
-    }, "[build|queue] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
+    }, "[|build|queue] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
 
 
   unprotectedCommand(msgInfo, ['!info', '!help'], null, () => {

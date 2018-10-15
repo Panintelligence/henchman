@@ -4,7 +4,7 @@ const staffsquaredConfig = require('./config/staffsquared-config.json');
 const Cryptr = require('cryptr');
 const http = require('https');
 const querystring = require('querystring');
-const chat = require('./discord-chat');
+const utils = require('./utils');
 
 
 let TOKEN = null;
@@ -72,9 +72,13 @@ const makeStaffsquaredRequest = (method, path, body, callback, onRequest) => {
 }
 
 module.exports = {
-  absences: (msgInfo, callback) => {
+  absencesToday: (msgInfo, callback) => {
     makeStaffsquaredRequest('GET', `/api/Absence/Today`, null, ((string) => {
-      console.log("STR:", string)
+      callback(JSON.parse(string));
+    }));
+  },
+  absencesFuture: (msgInfo, callback) => {
+    makeStaffsquaredRequest('GET', `/api/Absence/Future`, null, ((string) => {
       callback(JSON.parse(string));
     }));
   }
