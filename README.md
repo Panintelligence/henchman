@@ -1,5 +1,16 @@
-# Jenkins Builder bot for Discord
-A bot that lets you communicate with Jenkins on Discord
+# Henchman: a bot for Discord
+A bot that lets you interact with various tools via Discord
+
+# Features
+* Jenkins
+  * Start builds
+  * Cancel builds
+* Gitlab integration
+  * List branches
+* Staffsquared
+  * Check who's on holiday
+* Jira
+  * Turn issue mentions into links
 
 # Set up
 1. Create a discord app with a bot: https://discordapp.com/developers/applications/
@@ -10,17 +21,7 @@ A bot that lets you communicate with Jenkins on Discord
 Where `client_id` is your bot's client ID
 
 # Usage
-Commands:
-  * `!poke` - check if I'm around.
-  * `!info` or `!help` - this info.
-  * `!branches [filter]` - lists all the branches in git. Optionally pass a filter to "grep" by.
-  * `!release` - tries to find the release branch.
-  * `!build [branch]` - start a build (if branch is not provided then I'll use master).
-  * `!cancel [build|queue] <number>` - cancel a build or a queue item. If build or queue is not provided, I'll assume it's a build number.
-In addition, I respond to plain english requests that contain the words:
-  * `start` and `build` for building (and optionally a `branch`).
-  * `cancel` paired with `build` or `queue` and a build/queue `number`.
-If anyone asks what the release branch is I'll try to find the latest one too!
+On a discord server with the bot type `!info` and the bot will reply with the commands it understands.
 
 # Config
 ## discord-config.json
