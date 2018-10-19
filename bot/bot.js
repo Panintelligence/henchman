@@ -23,7 +23,6 @@ const isDev = (info) => {
 
 const command = (info, bangCommands, regex, f) => {
   const match = regex ? info.message.match(regex) : null;
-  console.log(info.message.match(regex), match)
   const bangCommand = utils.string.startsWithAny(info.message, bangCommands)
   if (bangCommand !== null || (match && match.length > 0)) {
     f(info, bangCommand, (match && match.length > 0) ? match : []);
@@ -106,8 +105,8 @@ bot.on('message', (user, userID, channelID, message, evt) => {
   unprotectedCommand(msgInfo, [`!${jiraConfig.projectCode}`], new RegExp(`(${jiraConfig.projectCode}-|)[0-9][0-9][0-9][0-9]+`, 'gim'),
     (info, command, match) => {
       const issueLinks = match.filter((m) => {
-          return info.message.split(" ").filter((word) => {
-              return word.includes(m) && word.includes('http')
+          return info.message.split(/\s/g).filter((word) => {
+              return word.includes(m) && (word.includes('http') || word.includes('@'))
             }).length === 0 &&
             !info.message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
         })
