@@ -110,6 +110,9 @@ bot.on('message', (user, userID, channelID, message, evt) => {
             }).length === 0 &&
             !info.message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
         })
+        .filter((m) => {
+          return m.includes(jiraConfig.projectCode) || isDev(info)
+        })
         .map((issueNumber) => {
           if (isDev(info) && !issueNumber.includes(jiraConfig.projectCode)) {
             return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${jiraConfig.projectCode}-${issueNumber}`
@@ -119,8 +122,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       if (issueLinks && issueLinks.length > 0) {
         if (issueLinks.length > 1) {
           chat(bot, channelID, `Those look like Jira issues:\n${issueLinks.join('\n')}`);
-        }
-        else {
+        } else {
           chat(bot, channelID, `That looks like a Jira issue: ${issueLinks.join('\n')}`);
         }
       }
