@@ -18,7 +18,7 @@ const WHITELISTED_CHANNELS = {};
 const helpCommands = {};
 
 const isDev = (info) => {
-  return utils.intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)
+  return info.roleIds && info.serverId && info.channelID && utils.intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)
 }
 
 const command = (info, bangCommands, regex, f) => {
@@ -91,8 +91,8 @@ bot.on('message', (user, userID, channelID, message, evt) => {
   logger.info(message);
 
   const msgInfo = {
-    serverId: evt.d['guild_id'],
-    roleIds: evt.d.member.roles,
+    serverId: evt.d['guild_id'] || null,
+    roleIds: evt.d.member ? evt.d.member.roles : null,
     message: message,
     bot: bot,
     channelID: channelID,
