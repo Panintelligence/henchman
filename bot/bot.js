@@ -17,24 +17,33 @@ const WHITELISTED_CHANNELS = {};
 
 const helpCommands = {};
 
+const isDev = (info) => {
+  return utils.intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)
+}
+
 const command = (info, bangCommands, regex, f) => {
   const match = regex ? info.message.match(regex) : null;
+  console.log(info.message.match(regex), match)
   const bangCommand = utils.string.startsWithAny(info.message, bangCommands)
-  if (bangCommand !== null || (match && match.length > 1)) {
-    f(info, bangCommand, (match && match.length > 1) ? match : []);
+  if (bangCommand !== null || (match && match.length > 0)) {
+    f(info, bangCommand, (match && match.length > 0) ? match : []);
   }
 }
 
 const unprotectedCommand = (info, bangCommands, regex, f, params, description) => {
-  const commands = bangCommands.map((c) => { return `\`${c}\`` }).join(" or ");
-  helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''}- ${description}`;
+  const commands = bangCommands.map((c) => {
+    return `**\`${c}\`**`
+  }).join(" or ");
+  helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - ${description}`;
   command(info, bangCommands, regex, f);
 };
 
 const protectedCommand = (info, bangCommands, regex, f, params, description) => {
-  const commands = bangCommands.map((c) => { return `\`${c}\`` }).join(" or ");
-  helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''}- (protected) ${description}`;
-  if (utils.intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)) {
+  const commands = bangCommands.map((c) => {
+    return `**\`${c}\`**`
+  }).join(" or ");
+  helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - **(protected)** ${description}`;
+  if (isDev(info)) {
     command(info, bangCommands, regex, f);
   }
 };
@@ -94,10 +103,29 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
   }, null, "Check if I'm around");
 
-  unprotectedCommand(msgInfo, [`!${jiraConfig.projectCode}`], new RegExp(`^(?!.*http).*(${jiraConfig.projectCode}-[0-9]+)`),
+  unprotectedCommand(msgInfo, [`!${jiraConfig.projectCode}`], new RegExp(`(${jiraConfig.projectCode}-|)[0-9][0-9][0-9][0-9]+`, 'gim'),
     (info, command, match) => {
-      chat(bot, channelID, `Jira Link: ${jiraConfig.protocol}://${jiraConfig.host}/browse/${match[1]}`);
-    }, "<number>", `I will attempt to link any Jira issues starting with ${jiraConfig.projectCode}`);
+      const issueLinks = match.filter((m) => {
+          return info.message.split(" ").filter((word) => {
+              return word.includes(m) && word.includes('http')
+            }).length === 0 &&
+            !info.message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
+        })
+        .map((issueNumber) => {
+          if (isDev(info) && !issueNumber.includes(jiraConfig.projectCode)) {
+            return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${jiraConfig.projectCode}-${issueNumber}`
+          }
+          return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${issueNumber}`
+        });
+      if (issueLinks && issueLinks.length > 0) {
+        if (issueLinks.length > 1) {
+          chat(bot, channelID, `Those look like Jira issues:\n${issueLinks.join('\n')}`);
+        }
+        else {
+          chat(bot, channelID, `That looks like a Jira issue: ${issueLinks.join('\n')}`);
+        }
+      }
+    }, "<number>", `I will attempt to link any Jira issues for project code ${jiraConfig.projectCode}`);
 
   unprotectedCommand(msgInfo, ['!away', '!holiday'], /.* *Who('s| is) (out( of( the|) office| off|)|on holiday) *(|today|tomorrow|this week|next week)\?/i,
     (info, command, match) => {
@@ -107,16 +135,16 @@ bot.on('message', (user, userID, channelID, message, evt) => {
 
         if (!param || param === "today") {
           Staffsquared.absencesToday(msgInfo, (absentees) => {
-            const absenteeNames = absentees.map((p) => { return ` * **${p['FirstName']} ${p['LastName']}**` });
+            const absenteeNames = absentees.map((p) => {
+              return ` * **${p['FirstName']} ${p['LastName']}**`
+            });
             if (absenteeNames.length > 0) {
               chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are off today:\n${absenteeNames.join('\n')}`);
-            }
-            else {
+            } else {
               chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared, nobody is off today.`);
             }
           });
-        }
-        else {
+        } else {
           let dateRange
           const midnightTodayDate = new Date();
           midnightTodayDate.setHours(0);
@@ -129,15 +157,12 @@ bot.on('message', (user, userID, channelID, message, evt) => {
               start: utils.date.addDays(midnightTodayDate, 1),
               end: utils.date.addDays(midnightTodayDate, 2)
             }
-          }
-          else {
+          } else {
             if (param === "this week") {
               dateRange = utils.date.getWeekRange(midnightTodayDate);
-            }
-            else if (param === "next week") {
+            } else if (param === "next week") {
               dateRange = utils.date.getWeekRange(utils.date.addDays(midnightTodayDate, 8));
-            }
-            else {
+            } else {
               return;
             }
           }
@@ -147,26 +172,27 @@ bot.on('message', (user, userID, channelID, message, evt) => {
                 return dateRange.start <= new Date(p['EventEnd']) && dateRange.end >= new Date(p['EventStart']);
               })
               .reduce((acc, p) => {
-                const existingPerson = acc.find((a) => { return a['EmployeeId'] === p['EmployeeId'] });
+                const existingPerson = acc.find((a) => {
+                  return a['EmployeeId'] === p['EmployeeId']
+                });
                 if (!existingPerson) {
                   acc.push(p);
-                }
-                else {
+                } else {
                   if (utils.date.isSameDay(existingPerson['EventStart'], p['EventEnd']) || utils.date.isSameDay(existingPerson['EventEnd'], p['EventStart'])) {
                     existingPerson['EventStart'] = utils.date.min(existingPerson['EventStart'], p['EventStart']);
                     existingPerson['EventEnd'] = utils.date.max(existingPerson['EventEnd'], p['EventEnd']);
-                  }
-                  else {
+                  } else {
                     acc.push(p);
                   }
                 }
                 return acc;
               }, [])
-              .map((p) => { return ` * **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})` });
+              .map((p) => {
+                return ` * **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})`
+              });
             if (absenteeNames.length > 0) {
               chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are off ${param}:\n${absenteeNames.join('\n')}`);
-            }
-            else {
+            } else {
               chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared, nobody is off ${param}.`);
             }
           });
@@ -187,8 +213,12 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     (info, command, match) => {
       Gitlab.branchList(null, msgInfo, (branchesString) => {
         const branches = JSON.parse(branchesString);
-        const branchNames = branches.filter((b) => { return b.name.indexOf("release") !== -1; })
-          .sort((a, b) => { return a.commit.committed_date < b.commit.committed_date ? 1 : (a.commit.committed_date > b.commit.committed_date ? -1 : 0); });
+        const branchNames = branches.filter((b) => {
+            return b.name.indexOf("release") !== -1;
+          })
+          .sort((a, b) => {
+            return a.commit.committed_date < b.commit.committed_date ? 1 : (a.commit.committed_date > b.commit.committed_date ? -1 : 0);
+          });
         chat(msgInfo.bot, msgInfo.channelID, `<@${msgInfo.userID}>, the release branch is probably \`${branchNames[0].name}\``);
       });
     }, null, "I'll try to figure out what the release branch is");
@@ -219,8 +249,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
         const params = info.message.split(command)[1].trim().split(/ +/);
         type = params.length > 1 ? params[0] : 'build';
         number = params.length > 1 ? params[1] : params[0];
-      }
-      else {
+      } else {
         type = match[2];
         number = match[4];
       }
@@ -228,8 +257,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
         Jenkins.cancelQueue(number, () => {
           chat(info.bot, info.channelID, `I've cancelled queue item ${number}, <@${info.userID}>.`);
         });
-      }
-      else {
+      } else {
         Jenkins.cancelBuild(number, () => {
           chat(info.bot, info.channelID, `I've cancelled build number ${number}, <@${info.userID}>.`);
         });
@@ -241,10 +269,14 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     chat(bot, channelID, `Here's some info, <@${userID}>:
   Commands:
 ${Object.values(helpCommands).join("\n")}
-  
-  In addition, I respond to plain english requests that contain the words:
-    * \`start\` and \`build\` for building (and optionally a \`branch\`).
-    * \`cancel\` paired with \`build\` or \`queue\` and a build/queue \`number\`.
-  If anyone asks what the release branch is I'll try to find the latest one too!`);
+
+***(protected)** commands can only be issued from privileged channels and by privileged roles.*
+  * *Channels: ${discordConfig.channelWhitelist.map((r)=>{return `#${r}`}).join(', ')}*
+  * *Roles:  ${discordConfig.roleWhitelist.join(', ')}*
+
+In addition, I respond to plain english requests that contain the words:
+  * \`start\` and \`build\` for building (and optionally a \`branch\`).
+  * \`cancel\` paired with \`build\` or \`queue\` and a build/queue \`number\`.
+If anyone asks what the release branch is I'll try to find the latest one too!`);
   }, null, "This info");
 });
