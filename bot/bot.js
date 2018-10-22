@@ -106,7 +106,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     (info, command, match) => {
       const issueLinks = match.filter((m) => {
           return info.message.split(/\s/g).filter((word) => {
-              return word.includes(m) && (word.includes('http') || word.includes('@'))
+              return word.includes(m) && (word.includes('http') || word.includes('@') || (word.includes('<') && word.includes('>')))
             }).length === 0 &&
             !info.message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
         })
@@ -152,7 +152,6 @@ bot.on('message', (user, userID, channelID, message, evt) => {
           midnightTodayDate.setMinutes(0);
           midnightTodayDate.setSeconds(0);
           midnightTodayDate.setMilliseconds(0);
-          console.log(`Today at Midnight: ${midnightTodayDate}`)
           if (param === "tomorrow") {
             dateRange = {
               start: utils.date.addDays(midnightTodayDate, 1),
