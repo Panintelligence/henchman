@@ -81,7 +81,7 @@ bot.on('ready', (evt) => {
     });
   });
 });
-
+console.log(new RegExp(`(^|\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\s+|$)`, 'gim'))
 bot.on('message', (user, userID, channelID, message, evt) => {
   if (userID === bot.id) {
     return;
@@ -102,22 +102,37 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
   }, null, "Check if I'm around");
 
-  unprotectedCommand(msgInfo, [`!${jiraConfig.projectCode}`], new RegExp(`(${jiraConfig.projectCode}-|)[0-9][0-9][0-9][0-9]+`, 'gim'),
+  unprotectedCommand(msgInfo, jiraConfig.projects.map(p => `!${p.code}`),
+    new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|$)`, 'gim'),
     (info, command, match) => {
-      const issueLinks = match.filter((m) => {
+      const issueLinks = match
+        .map(m=>m.trim())
+        .filter((m) => {
           return info.message.split(/\s/g).filter((word) => {
               return word.includes(m) && (word.includes('http') || word.includes('@') || (word.includes('<') && word.includes('>')))
             }).length === 0 &&
             !info.message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
         })
         .filter((m) => {
-          return m.includes(jiraConfig.projectCode) || isDev(info)
+          return jiraConfig.projects.some((p) => m.includes(p.code)) || isDev(info)
+        })
+        .filter((m) => {
+          return jiraConfig.projects.some((p) => {
+            return Number(m.includes(p.code) ? m.split(`${p.code}-`)[1] : m) >= p.issueStart
+          });
         })
         .map((issueNumber) => {
-          if (isDev(info) && !issueNumber.includes(jiraConfig.projectCode)) {
-            return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${jiraConfig.projectCode}-${issueNumber}`
+          const defaultProject = jiraConfig.projects.find(p=>p.default);
+          if (isDev(info) && !jiraConfig.projects.some(p => issueNumber.includes(p.code))) {
+            if(Number(issueNumber) >= defaultProject.issueStart){
+              return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${defaultProject.code}-${issueNumber}`
+            }
+            return null;
           }
           return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${issueNumber}`
+        })
+        .filter((m)=>{
+          return !!m
         });
       if (issueLinks && issueLinks.length > 0) {
         if (issueLinks.length > 1) {
@@ -126,7 +141,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
           chat(bot, channelID, `That looks like a Jira issue: ${issueLinks.join('\n')}`);
         }
       }
-    }, "<number>", `I will attempt to link any Jira issues for project code ${jiraConfig.projectCode}`);
+    }, "<number>", `I will attempt to link any Jira issues for the following projects: ${jiraConfig.projects.map(p=>p.code).join(', ')}`);
 
   unprotectedCommand(msgInfo, ['!away', '!holiday'], /.* *Who('s| is) (out( of( the|) office| off|)|on holiday) *(|today|tomorrow|this week|next week)\?/i,
     (info, command, match) => {

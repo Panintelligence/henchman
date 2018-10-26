@@ -1,5 +1,0 @@
-{
-  "protocol": "https",
-  "host": "your.jira.url",
-  "projectCode": "PROJECT"
-}

@@ -1,0 +1,8 @@
+{
+  "protocol": "https",
+  "host": "your.jira.url",
+  "projects": [
+    { "code":"PROJECT1", "issueStart": 5000 },
+    { "code":"PROJECT2", "issueStart": 1, "default": true }
+  ]
+}
