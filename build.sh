@@ -24,6 +24,7 @@ if [[ "$HAS_IMAGE" == "" ]]; then
 fi
 
 docker run \
+	--restart unless-stopped \
 	--name "${NAME}" \
 	--add-host parent:${PARENT} \
 	-v ${CONFIG_DIR}:/code/discord-builder-bot \
