@@ -6,11 +6,11 @@ const jiraConfig = require('./config/jira-config.json');
 
 const Discord = require('discord.io');
 const logger = require('winston');
-const Jenkins = require('./jenkins');
-const Gitlab = require('./gitlab');
-const Staffsquared = require('./staffsquared');
-const chat = require('./discord-chat')
-const utils = require('./utils')
+const Jenkins = require('./services/jenkins');
+const Gitlab = require('./services/gitlab');
+const Staffsquared = require('./services/staffsquared');
+const chat = require('./utils/discord-chat')
+const utils = require('./utils/utils')
 
 const WHITELISTED_ROLES = {};
 const WHITELISTED_CHANNELS = {};
@@ -81,7 +81,7 @@ bot.on('ready', (evt) => {
     });
   });
 });
-console.log(new RegExp(`(^|\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\s+|$)`, 'gim'))
+
 bot.on('message', (user, userID, channelID, message, evt) => {
   if (userID === bot.id) {
     return;
@@ -106,7 +106,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|$)`, 'gim'),
     (info, command, match) => {
       const issueLinks = match
-        .map(m=>m.trim())
+        .map(m => m.trim())
         .filter((m) => {
           return info.message.split(/\s/g).filter((word) => {
               return word.includes(m) && (word.includes('http') || word.includes('@') || (word.includes('<') && word.includes('>')))
@@ -122,16 +122,16 @@ bot.on('message', (user, userID, channelID, message, evt) => {
           });
         })
         .map((issueNumber) => {
-          const defaultProject = jiraConfig.projects.find(p=>p.default);
+          const defaultProject = jiraConfig.projects.find(p => p.default);
           if (isDev(info) && !jiraConfig.projects.some(p => issueNumber.includes(p.code))) {
-            if(Number(issueNumber) >= defaultProject.issueStart){
+            if (Number(issueNumber) >= defaultProject.issueStart) {
               return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${defaultProject.code}-${issueNumber}`
             }
             return null;
           }
           return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${issueNumber}`
         })
-        .filter((m)=>{
+        .filter((m) => {
           return !!m
         });
       if (issueLinks && issueLinks.length > 0) {
