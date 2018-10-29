@@ -9,41 +9,38 @@ const logger = require('winston');
 const Jenkins = require('./services/jenkins');
 const Gitlab = require('./services/gitlab');
 const Staffsquared = require('./services/staffsquared');
-const chat = require('./utils/discord-chat')
-const utils = require('./utils/utils')
+const chat = require('./utils/discord-chat');
+const utils = require('./utils/utils');
+const _ = require('./services/bot')
 
 const WHITELISTED_ROLES = {};
 const WHITELISTED_CHANNELS = {};
 
 const helpCommands = {};
 
-const isDev = (info) => {
-  return info.roleIds && info.serverId && info.channelID && utils.intersectArray(info.roleIds, WHITELISTED_ROLES[info.serverId]) && WHITELISTED_CHANNELS[info.serverId].includes(info.channelID)
-}
-
-const command = (info, bangCommands, regex, f) => {
-  const match = regex ? info.message.match(regex) : null;
-  const bangCommand = utils.string.startsWithAny(info.message, bangCommands)
-  if (bangCommand !== null || (match && match.length > 0)) {
-    f(info, bangCommand, (match && match.length > 0) ? match : []);
-  }
-}
-
-const unprotectedCommand = (info, bangCommands, regex, f, params, description) => {
-  const commands = bangCommands.map((c) => {
-    return `**\`${c}\`**`
-  }).join(" or ");
-  helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - ${description}`;
-  command(info, bangCommands, regex, f);
+const isPermitted = (info) => {
+  return info.serverId &&
+    _.isPermitted(info.channelID,
+      info.roleIds,
+      WHITELISTED_CHANNELS[info.serverId],
+      WHITELISTED_ROLES[info.serverId])
 };
 
-const protectedCommand = (info, bangCommands, regex, f, params, description) => {
-  const commands = bangCommands.map((c) => {
+const unprotectedCommand = (info, triggers, f, params, description) => {
+  const commands = triggers.commands.map((c) => {
     return `**\`${c}\`**`
   }).join(" or ");
-  helpCommands[bangCommands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - **(protected)** ${description}`;
-  if (isDev(info)) {
-    command(info, bangCommands, regex, f);
+  helpCommands[triggers.commands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - ${description}`;
+  _.command(info, triggers.commands, triggers.regex, f);
+};
+
+const protectedCommand = (info, triggers, f, params, description) => {
+  const commands = triggers.commands.map((c) => {
+    return `**\`${c}\`**`
+  }).join(" or ");
+  helpCommands[triggers.commands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - **(protected)** ${description}`;
+  if (isPermitted(info)) {
+    _.command(info, triggers.commands, triggers.regex, f);
   }
 };
 
@@ -98,12 +95,12 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     userID: userID
   };
 
-  unprotectedCommand(msgInfo, ['!poke'], /.* *(Is the|) *bot on(line|)\?/, () => {
-    chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
-  }, null, "Check if I'm around");
+  unprotectedCommand(msgInfo, _.triggers.poke,
+    (info, command, match) => {
+      chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
+    }, null, "Check if I'm around");
 
-  unprotectedCommand(msgInfo, jiraConfig.projects.map(p => `!${p.code}`),
-    new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|$)`, 'gim'),
+  unprotectedCommand(msgInfo, _.triggers.jiraProjects,
     (info, command, match) => {
       const issueLinks = match
         .map(m => m.trim())
@@ -114,7 +111,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
             !info.message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
         })
         .filter((m) => {
-          return jiraConfig.projects.some((p) => m.includes(p.code)) || isDev(info)
+          return jiraConfig.projects.some((p) => m.includes(p.code)) || isPermitted(info)
         })
         .filter((m) => {
           return jiraConfig.projects.some((p) => {
@@ -123,7 +120,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
         })
         .map((issueNumber) => {
           const defaultProject = jiraConfig.projects.find(p => p.default);
-          if (isDev(info) && !jiraConfig.projects.some(p => issueNumber.includes(p.code))) {
+          if (isPermitted(info) && !jiraConfig.projects.some(p => issueNumber.includes(p.code))) {
             if (Number(issueNumber) >= defaultProject.issueStart) {
               return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${defaultProject.code}-${issueNumber}`
             }
@@ -143,7 +140,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       }
     }, "<number>", `I will attempt to link any Jira issues for the following projects: ${jiraConfig.projects.map(p=>p.code).join(', ')}`);
 
-  unprotectedCommand(msgInfo, ['!away', '!holiday'], /.* *Who('s| is) (out( of( the|) office| off|)|on holiday) *(|today|tomorrow|this week|next week)\?/i,
+  unprotectedCommand(msgInfo, _.triggers.holiday,
     (info, command, match) => {
       if (info.message.indexOf(command) !== -1 || (match)) {
         const commandArgs = info.message.split(command);
@@ -213,18 +210,9 @@ bot.on('message', (user, userID, channelID, message, evt) => {
           });
         }
       }
-
-      // const absenteeNames = absentees.map((p) => {
-      //   return {
-      //     name: utils.string.capitalize(p['EmployeeEmail'].split('@')[0].split('.').join(' ')),
-      //     type: p['AbsenceType']
-      //   }
-      // });
-
-
     }, "[|today|tomorrow|this week|next week]", "See who's off");
 
-  protectedCommand(msgInfo, ['!release'], /.* *(((what|which|where)(\'s| is|)|have) (the|) release (branch|))/i,
+  protectedCommand(msgInfo, _.triggers.release,
     (info, command, match) => {
       Gitlab.branchList(null, msgInfo, (branchesString) => {
         const branches = JSON.parse(branchesString);
@@ -238,7 +226,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       });
     }, null, "I'll try to figure out what the release branch is");
 
-  protectedCommand(msgInfo, ['!branches'], null,
+  protectedCommand(msgInfo, _.triggers.branches,
     (info, command, match) => {
       let filter = "";
       if (info.message.indexOf(command) !== -1) {
@@ -248,7 +236,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     }, "[|filter]", "I'll list all the branches in git. Optionally pass a filter to \"grep\" by");
 
 
-  protectedCommand(msgInfo, ['!build'], /.* *(start) .* *(build) *((on|for|from|) *(`|)((?!please\b)\b\w+)(`|)|)/i,
+  protectedCommand(msgInfo, _.triggers.build,
     (info, command, match) => {
       const b = info.message.indexOf(command) !== -1 ? info.message.split(command)[1].trim() : null;
       const branch = match[6] || b || jenkinsConfig.defaultBranch;
@@ -256,7 +244,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       Jenkins.requestBuild(branch, msgInfo);
     }, "[|branch]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);
 
-  protectedCommand(msgInfo, ['!cancel'], /.* *(cancel) .* *(build|queue) *(`|)((?!please\b)\b\w+)(`|)/i,
+  protectedCommand(msgInfo, _.triggers.cancelBuild,
     (info, command, match) => {
       let number = "";
       let type = "";
@@ -279,8 +267,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       }
     }, "[|build|queue] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
 
-
-  unprotectedCommand(msgInfo, ['!info', '!help'], null, () => {
+  unprotectedCommand(msgInfo, _.triggers.help, () => {
     chat(bot, channelID, `Here's some info, <@${userID}>:
   Commands:
 ${Object.values(helpCommands).join("\n")}

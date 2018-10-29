@@ -38,53 +38,58 @@ const makeJenkinsRequest = (method, path, body, callback, onRequest) => {
 };
 
 const jenkins = {
+  "_": {
+    toJenkinsBody: (buildParams) => {
+      return "json=" + escape(
+        `{"parameter": ${JSON.stringify(buildParams, null, ' ')
+          .replace(/\n/g, '')
+          .replace(/  /g, ' ')
+          .replace(/\[ \{/g, '[{')
+          .replace(/\} \]/g, '}]')}}`
+      );
+    },
+    getQueuedItems: (queue, project) => {
+      return queue.filter((item) => {
+        return project ? item.task.name === project : true;
+      }).map((item) => {
+        return item.id
+      });
+    },
+    getItemsAheadText: (queuedItems, queueItem) => {
+      return `${queuedItems.indexOf(queueItem)} ${queuedItems.indexOf(queueItem) === 1 ? 'item' : 'items'}`
+    }
+  },
   cancelBuild: (number, callback) => {
     makeJenkinsRequest('POST', `/${DEFAULT_PROJECT}/${number}/stop`, null, callback).end();
   },
-
   cancelQueue: (number, callback) => {
     makeJenkinsRequest('POST', `/queue/cancelItem?id=${number}`, null, callback).end();
   },
-
   fetchProjectInfo: (callback) => {
     makeJenkinsRequest('GET', `/${DEFAULT_PROJECT}/api/json`, null, callback).end();
   },
-
   fetchQueueItems: (callback) => {
     makeJenkinsRequest('GET', `/queue/api/json`, null, callback).end();
   },
-
   fetchBuildInfo: (buildNumber, callback) => {
     makeJenkinsRequest('GET', `/${DEFAULT_PROJECT}/${buildNumber}/api/json`, null, callback).end();
   },
-
   requestBuild: (branch, msgInfo) => {
     const buildParams = jenkinsConfig.defaultBuildParams.map((param) => {
       const p = {};
       p.name = param.name.replace(/\[\[branch\]\]/g, branch);
       p.value = typeof param.value === "string" ? param.value.replace(/\[\[branch\]\]/g, branch) : param.value;
       return p;
-    })
-
-    const body = "json=" + escape(
-      `{"parameter": ${JSON.stringify(buildParams, null, ' ')
-        .replace(/\n/g, '')
-        .replace(/  /g, ' ')
-        .replace(/\[ \{/g, '[{')
-        .replace(/\} \]/g, '}]')}}`
-    )
+    });
+    const body = jenkins._.toJenkinsBody(buildParams);
 
     const request = makeJenkinsRequest('POST', `/${DEFAULT_PROJECT}/build`, body, null, (r) => {
       jenkins.fetchQueueItems((queueResString) => {
-        const queueRes = JSON.parse(queueResString);
-        const queuedItems = queueRes.items.filter((item) => {
-          return item.task.name === jenkinsConfig.project
-        }).map((item) => {
-          return item.id
-        });
+        const queuedItems = jenkins._.getQueuedItems(JSON.parse(queueResString).items, jenkinsConfig.project);
+
         if (queuedItems.length !== 0) {
           const queueItem = Math.max.apply(null, queuedItems);
-          const itemsAhead = `${queuedItems.indexOf(queueItem)} ${queuedItems.indexOf(queueItem) === 1 ? 'item' : 'items'}`
+          const itemsAhead = jenkins._.getItemsAheadText(queuedItems, queueItem);
           chat(msgInfo.bot, msgInfo.channelID, `Your build has been queued with the item number ${queueItem}, <@${msgInfo.userID}>. There's one item currentl building and ${itemsAhead} queued in front of it.`);
         } else {
           jenkins.fetchProjectInfo((projectInfoString) => {

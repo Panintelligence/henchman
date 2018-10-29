@@ -36,7 +36,7 @@ const makeGitlabRequest = (method, path, body, callback, onRequest) => {
 
 
 const createBranchesMessages = (branchNames, msgInfo) => {
-  if (msgInfo) {
+  if (msgInfo && msgInfo.channelID && msgInfo.userID && branchNames) {
     if (branchNames.length > 10) {
       return [{
           channel: msgInfo.channelID,
@@ -48,14 +48,32 @@ const createBranchesMessages = (branchNames, msgInfo) => {
         }
       ];
     }
-
-    return {
-      channel: msgInfo.channelID,
-      message: `Here's what I found:\n${branchNames.map((b)=>{return `  * \`${b}\``}).join('\n')}`
+    if (branchNames.length === 0) {
+      return [{
+        channel: msgInfo.channelID,
+        message: `I could not find any branches, <@${msgInfo.userID}>.`
+      }]
     }
+
+    return [{
+      channel: msgInfo.channelID,
+      message: `Here's what I found, <@${msgInfo.userID}>:\n${branchNames.map((b)=>{return `  * \`${b}\``}).join('\n')}`
+    }]
   }
 
   return [];
+}
+
+const createListOfBranches = (branches, filter) => {
+  if (!branches) {
+    return [];
+  }
+
+  return branches.filter((b) => {
+    return filter ? b.name.indexOf(filter) !== -1 : true;
+  }).map((b) => {
+    return b.name;
+  });
 }
 
 
@@ -63,16 +81,15 @@ const gitlab = {
   branchList: (filter, msgInfo, callback) => {
     chat(msgInfo.bot, msgInfo.channelID, `Hold on while I try to find out, <@${msgInfo.userID}>...`);
     makeGitlabRequest('GET', `/api/v4/projects/${gitlabConfig.projectId}/repository/branches?per_page=999999999`, null, callback || ((branchesString) => {
-      const branches = JSON.parse(branchesString);
-      const branchNames = branches.filter((b) => {
-        return filter ? b.name.indexOf(filter) !== -1 : true;
-      }).map((b) => {
-        return b.name;
-      });
+      const branchNames = createListOfBranches(JSON.parse(branchesString), filter);
       createBranchesMessages(branchNames, msgInfo).forEach((m) => {
         chat(msgInfo.bot, m.channel, m.message);
       });
     })).end();
+  },
+  "_": {
+    createBranchesMessages: createBranchesMessages,
+    createListOfBranches: createListOfBranches,
   }
 }
 
