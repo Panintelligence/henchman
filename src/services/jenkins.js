@@ -90,7 +90,7 @@ const jenkins = {
         if (queuedItems.length !== 0) {
           const queueItem = Math.max.apply(null, queuedItems);
           const itemsAhead = jenkins._.getItemsAheadText(queuedItems, queueItem);
-          chat(msgInfo.bot, msgInfo.channelID, `Your build has been queued with the item number ${queueItem}, <@${msgInfo.userID}>. There's one item currentl building and ${itemsAhead} queued in front of it.`);
+          chat(msgInfo.bot, msgInfo.channelID, `Your build has been queued with the item number ${queueItem}, <@${msgInfo.userID}>. There's one item currently building and ${itemsAhead} queued in front of it.`);
         } else {
           jenkins.fetchProjectInfo((projectInfoString) => {
             const projectInfo = JSON.parse(projectInfoString);
