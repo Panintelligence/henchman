@@ -24,16 +24,16 @@ const triggers = {
   },
   jiraProjects: {
     commands: jiraConfig.projects.map(p => `!${p.code}`),
-    regex: new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|$)`, 'gim'),
-    regexForTest: new RegExp(`(^|\\s+)((PROJ1|PROJ2)-|)[0-9]+(\\s+|$)`, 'gim')
+    regex: new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|\\W|$)`, 'gim'),
+    regexForTest: new RegExp(`(^|\\s+)((PROJ1|PROJ2)-|)[0-9]+(\\s+|\\W|$)`, 'gim')
   },
   holiday: {
     commands: ['!away', '!holiday'],
-    regex: /.* *Who('s| is) (out( of( the|) office| off|)|on holiday) *(|today|tomorrow|this week|next week)\?/i
+    regex: /.* *Who('s| is) (out( of( the|) office|)|on holiday|off|away) *(|today|tomorrow|this week|next week)\?/i
   },
   release: {
     commands: ['!release'],
-    regex: /.* *(((what|which|where)(\'s| is|)|have) (the|) release (branch|))/i
+    regex: /.* *(((what|which|where)(\'s| is|)|can I have|which (one|branch)(\'s| is)) (the|) release( branch|))/i
   },
   branches: {
     commands: ['!branches'],
@@ -41,7 +41,7 @@ const triggers = {
   },
   build: {
     commands: ['!build'],
-    regex: /.* *(start) .* *(build) *((on|for|from|) *(`|)((?!please\b)\b\w+)(`|)|)/i
+    regex: /.* *(start|can I have a|make) .* *(build)(\s|\W|$)+((on|for|from|) *(`|)((?!please\b)\b\w+)(`|)|)/i
   },
   cancelBuild: {
     commands: ['!cancel'],

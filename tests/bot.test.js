@@ -115,7 +115,7 @@ describe('Bot test', () => {
           "PROJ2-456",
           "The issue is 8975",
           "Can anyone check 4456?",
-          "Raised PROJ2-4456?",
+          "Raised PROJ2-4456",
         ].forEach((m)=>{
           notExecuted.push(m);
           bot.command({ message:m }, null, bot.triggers.jiraProjects.regexForTest, (i) => {
@@ -124,8 +124,187 @@ describe('Bot test', () => {
           });
         });
 
-        assert.deepEqual(executed, ["9980", "1", "123", "PROJ1-321", "PROJ2-456", "The issue is 8975", ""]);
+        assert.deepEqual(executed, ["9980", "1", "123", "PROJ1-321", "PROJ2-456", "The issue is 8975", "Can anyone check 4456?", "Raised PROJ2-4456"]);
         assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "PROJECT1", "PROJECT2", "PROJ1", "PROJ2", "P-9999"]);
+      });
+
+      it(`should execute when the message matches the regex: ${bot.triggers.holiday.regex}`, () => {
+        const executed = [];
+        let notExecuted = [];
+
+        ["Hello",
+          "aksdjijqwi",
+          "Who?",
+          "Who is out?",
+          "Who's out?",
+          "Who's in?",
+          "Who is out of office?",
+          "Who's away?",
+          "Who's on holiday?",
+          "Who's on holiday today?",
+          "Who's off tomorrow?",
+          "Who is out of the office next week?",
+          "Anyone off tomorrow?",
+          "Who got away?"
+        ].forEach((m)=>{
+          notExecuted.push(m);
+          bot.command({ message:m }, null, bot.triggers.holiday.regex, (i) => {
+            executed.push(i.message);
+            notExecuted = notExecuted.filter(c => c !== m);
+          });
+        });
+
+        assert.deepEqual(executed, ["Who is out?", "Who's out?", "Who is out of office?",
+          "Who's away?", "Who's on holiday?", "Who's on holiday today?", "Who's off tomorrow?", "Who is out of the office next week?"]);
+        assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "Who?", "Who's in?", "Anyone off tomorrow?", "Who got away?"]);
+      });
+
+      it(`should execute when the message matches the regex: ${bot.triggers.release.regex}`, () => {
+        const executed = [];
+        let notExecuted = [];
+
+        ["Hello",
+          "aksdjijqwi",
+          "What's the release?",
+          "Which one's the release branch?",
+          "Can I have the release branch?",
+          "Which branch is the release one?",
+          "Can someone tell me what the release branch is?",
+          "Hey bot, what's the release branch?",
+          "release",
+          "release branch",
+          "Something that we've released",
+          "Something that we're going to release",
+        ].forEach((m)=>{
+          notExecuted.push(m);
+          bot.command({ message:m }, null, bot.triggers.release.regex, (i) => {
+            executed.push(i.message);
+            notExecuted = notExecuted.filter(c => c !== m);
+          });
+        });
+
+        assert.deepEqual(executed, ["What's the release?", "Which one's the release branch?", "Can I have the release branch?",
+          "Which branch is the release one?", "Can someone tell me what the release branch is?", "Hey bot, what's the release branch?"]);
+        assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "release", "release branch", "Something that we've released", "Something that we're going to release",]);
+      });
+
+      it(`should execute when the message matches the regex: ${bot.triggers.branches.regex}`, () => {
+        const executed = [];
+        let notExecuted = [];
+
+        ["Hello",
+          "aksdjijqwi",
+          "branches",
+          "",
+          "anything",
+          "this should never be triggered by regex",
+        ].forEach((m)=>{
+          notExecuted.push(m);
+          bot.command({ message:m }, null, bot.triggers.branches.regex, (i) => {
+            executed.push(i.message);
+            notExecuted = notExecuted.filter(c => c !== m);
+          });
+        });
+
+        assert.deepEqual(executed, []);
+        assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "branches", "", "anything", "this should never be triggered by regex",]);
+      });
+
+      it(`should execute when the message matches the regex: ${bot.triggers.build.regex}`, () => {
+        const executed = [];
+        let notExecuted = [];
+
+        ["Hello",
+          "aksdjijqwi",
+          "Mr Bot, start a build please",
+          "Can anyone start a build?",
+          "Start a build for this_branch",
+          "Can I have a build from master please?",
+          "<@1111> make a build",
+          "build master",
+          "start building stuff",
+          "this is a good build for mage",
+          "build from master",
+        ].forEach((m)=>{
+          notExecuted.push(m);
+          bot.command({ message:m }, null, bot.triggers.build.regex, (i) => {
+            executed.push(i.message);
+            notExecuted = notExecuted.filter(c => c !== m);
+          });
+        });
+
+        assert.deepEqual(executed, ["Mr Bot, start a build please",
+        "Can anyone start a build?",
+        "Start a build for this_branch",
+        "Can I have a build from master please?",
+        "<@1111> make a build"]);
+        assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "build master", "start building stuff", "this is a good build for mage",
+          "build from master",]);
+      });
+
+      it(`should execute when the message matches the regex: ${bot.triggers.cancelBuild.regex}`, () => {
+        const executed = [];
+        let notExecuted = [];
+
+        ["Hello",
+          "aksdjijqwi",
+          "Mr Bot, cancel the build please",
+          "Can anyone cancel the build?",
+          "cancel the build for this_branch",
+          "<@1111> cancel the build",
+          "cancel build",
+          "Mr Bot, cancel the queue please",
+          "Can anyone cancel the queue?",
+          "cancel the queue for this_branch",
+          "<@1111> cancel the queue",
+          "cancel queue",
+        ].forEach((m)=>{
+          notExecuted.push(m);
+          bot.command({ message:m }, null, bot.triggers.cancelBuild.regex, (i) => {
+            executed.push(i.message);
+            notExecuted = notExecuted.filter(c => c !== m);
+          });
+        });
+
+        assert.deepEqual(executed, ["cancel the build for this_branch", "cancel the queue for this_branch"]);
+        assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi",
+          "Mr Bot, cancel the build please",
+          "Can anyone cancel the build?",
+          "<@1111> cancel the build",
+          "cancel build",
+          "Mr Bot, cancel the queue please",
+          "Can anyone cancel the queue?",
+          "<@1111> cancel the queue",
+          "cancel queue"]);
+      });
+
+      it(`should execute when the message matches the regex: ${bot.triggers.help.regex}`, () => {
+        const executed = [];
+        let notExecuted = [];
+
+        ["Hello",
+          "aksdjijqwi",
+          "info",
+          "help",
+          "",
+          "anything",
+          "this should never be triggered by regex"
+        ].forEach((m)=>{
+          notExecuted.push(m);
+          bot.command({ message:m }, null, bot.triggers.help.regex, (i) => {
+            executed.push(i.message);
+            notExecuted = notExecuted.filter(c => c !== m);
+          });
+        });
+
+        assert.deepEqual(executed, []);
+        assert.deepEqual(notExecuted, ["Hello",
+          "aksdjijqwi",
+          "info",
+          "help",
+          "",
+          "anything",
+          "this should never be triggered by regex"]);
       });
     });
   });
