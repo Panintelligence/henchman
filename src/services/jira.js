@@ -1,0 +1,49 @@
+const config = require('../config/jira-config.json');
+
+const _matchesToIssueLinks = (message, matches, isPermitted, jiraConfig) => {
+  return matches.map(m => m.trim())
+    .filter((m) => {
+      return message.split(/\s/g).filter((word) => {
+          return word.includes(m) && (word.includes('http') || word.includes('@') || (word.includes('<') && word.includes('>')))
+        }).length === 0 &&
+        !message.includes(`${jiraConfig.protocol}://${jiraConfig.host}/browse/${m}`)
+    })
+    .filter((m) => {
+      return jiraConfig.projects.some((p) => m.includes(p.code)) || isPermitted
+    })
+    .filter((m) => {
+      return jiraConfig.projects.some((p) => {
+        return Number(m.includes(p.code) ? m.split(`${p.code}-`)[1] : m) >= p.issueStart
+      });
+    })
+    .reduce((acc, issue)=>{
+      const defaultProject = jiraConfig.projects.find(p => p.default);
+      if(!acc.includes(issue) && !acc.includes(`${defaultProject.code}-${issue}`) && !acc.map(a=>`${defaultProject.code}-${a}`).includes(issue)){
+        acc.push(issue);
+      }
+      return acc;
+    }, [])
+    .map((issueNumber) => {
+      const defaultProject = jiraConfig.projects.find(p => p.default);
+      if (isPermitted && !jiraConfig.projects.some(p => issueNumber.includes(p.code))) {
+        if (Number(issueNumber) >= defaultProject.issueStart) {
+          return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${defaultProject.code}-${issueNumber}`
+        }
+        return null;
+      }
+      return `${jiraConfig.protocol}://${jiraConfig.host}/browse/${issueNumber}`
+    })
+    .filter((m) => {
+      return !!m
+    });
+};
+const matchesToIssueLinks = (message, matches, isPermitted) => {
+  return _matchesToIssueLinks(message, matches, isPermitted, config);
+}
+
+module.exports = {
+  matchesToIssueLinks: matchesToIssueLinks,
+  _: {
+    matchesToIssueLinks: _matchesToIssueLinks
+  }
+};

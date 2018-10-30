@@ -116,15 +116,32 @@ describe('Bot test', () => {
           "The issue is 8975",
           "Can anyone check 4456?",
           "Raised PROJ2-4456",
+          "Just fixed 8789, 5412 and 8655",
+          "You can't have fixed 8789 5412 or 8655!",
+          "Can anyone have a look at 6542\n4564\nPROJ2-45",
+          "I'm mentioning 8789 and 8789 twice but 5122 only once"
         ].forEach((m)=>{
           notExecuted.push(m);
-          bot.command({ message:m }, null, bot.triggers.jiraProjects.regexForTest, (i) => {
-            executed.push(i.message);
+          bot.command({ message:m }, null, bot.triggers.jiraProjects.regexForTest, (i, _, match) => {
+            executed.push([i.message, match]);
             notExecuted = notExecuted.filter(c => c !== m);
           });
         });
 
-        assert.deepEqual(executed, ["9980", "1", "123", "PROJ1-321", "PROJ2-456", "The issue is 8975", "Can anyone check 4456?", "Raised PROJ2-4456"]);
+        assert.deepEqual(executed, [
+          ["9980", ["9980"]],
+          ["1", ["1"]],
+          ["123", ["123"]],
+          ["PROJ1-321", ["PROJ1-321"]],
+          ["PROJ2-456", ["PROJ2-456"]],
+          ["The issue is 8975", [" 8975"]],
+          ["Can anyone check 4456?", [" 4456"]],
+          ["Raised PROJ2-4456", [" PROJ2-4456"]],
+          ["Just fixed 8789, 5412 and 8655", [" 8789", " 5412", " 8655"]],
+          ["You can't have fixed 8789 5412 or 8655!", [" 8789", " 5412", " 8655"]],
+          ["Can anyone have a look at 6542\n4564\nPROJ2-45", [" 6542", "\n4564", "\nPROJ2-45"]],
+          ["I'm mentioning 8789 and 8789 twice but 5122 only once", [" 8789", " 8789", " 5122"]]
+        ]);
         assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "PROJECT1", "PROJECT2", "PROJ1", "PROJ2", "P-9999"]);
       });
 

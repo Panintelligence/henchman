@@ -25,7 +25,7 @@ const triggers = {
   jiraProjects: {
     commands: jiraConfig.projects.map(p => `!${p.code}`),
     regex: new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|\\W|$)`, 'gim'),
-    regexForTest: new RegExp(`(^|\\s+)((PROJ1|PROJ2)-|)[0-9]+(\\s+|\\W|$)`, 'gim')
+    regexForTest: new RegExp(`(^|\\s+)((PROJ1|PROJ2)-|)[0-9]+`, 'gim')
   },
   holiday: {
     commands: ['!away', '!holiday'],

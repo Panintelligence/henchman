@@ -33,7 +33,7 @@ const branchesNamesInList = [
     "third_branch__a",
     "third_branch__b",
     "master",
-]
+];
 
 describe('Gitlab Service test', () => {
     describe('createBranchesMessages', () => {
