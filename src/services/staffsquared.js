@@ -58,7 +58,6 @@ const makeStaffsquaredRequest = (method, path, body, callback, onRequest) => {
       const data = JSON.parse(dataString);
       TOKEN = data['access_token'];
       expiresAt = new Date().getTime() + data['expires_in'];
-      console.log("Data: ", data)
       makeGenericStaffsquaredRequest(method, path, body, callback, onRequest).end();
     });
     request.write(urlEncodedParams);
@@ -66,7 +65,35 @@ const makeStaffsquaredRequest = (method, path, body, callback, onRequest) => {
   } else {
     makeGenericStaffsquaredRequest(method, path, body, callback, onRequest).end();
   }
-}
+};
+
+const getNamesInDateRange = (absentees, dateRange) => {
+  return absentees.filter((p) => {
+    return dateRange.start <= new Date(p['EventEnd']) && dateRange.end >= new Date(p['EventStart']);
+  })
+  .map((p)=>{
+    return utils.object.clone(p);
+  })
+  .reduce((acc, p) => {
+    const existingPerson = acc.find((a) => {
+      return a['EmployeeId'] === p['EmployeeId']
+    });
+    if (!existingPerson) {
+      acc.push(p);
+    } else {
+      if (utils.date.isAdjoiningDate(existingPerson['EventStart'], p['EventEnd']) || utils.date.isAdjoiningDate(existingPerson['EventEnd'], p['EventStart'])) {
+        existingPerson['EventStart'] = utils.date.min(existingPerson['EventStart'], p['EventStart']);
+        existingPerson['EventEnd'] = utils.date.max(existingPerson['EventEnd'], p['EventEnd']);
+      } else {
+        acc.push(p);
+      }
+    }
+    return acc;
+  }, [])
+  .map((p) => {
+    return ` * **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})`
+  });
+};
 
 module.exports = {
   absencesToday: (msgInfo, callback) => {
@@ -78,5 +105,6 @@ module.exports = {
     makeStaffsquaredRequest('GET', `/api/Absence/Future`, null, ((string) => {
       callback(JSON.parse(string));
     }));
-  }
+  },
+  getNamesInDateRange: getNamesInDateRange
 };

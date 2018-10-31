@@ -8,7 +8,7 @@ const _conf = {
     { "code":"PROJ1", "issueStart": 5000 },
     { "code":"PROJ2", "issueStart": 5, "default": true }
   ]
-}
+};
 
 describe('Jira Service test', () => {
   describe('matchesToIssueLinks', () => {

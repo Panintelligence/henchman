@@ -46,6 +46,19 @@ describe('Utils test', () => {
     });
   });
   describe('Date utils', () => {
+    describe('textToDateRange', () => {
+      it('should "tomorrow", "this week" and "next week" into date ranges', () => {
+        assert.deepEqual(utils.date.textToDateRange("2018-10-29", "tomorrow"), {start:new Date("2018-10-30"), end: new Date("2018-10-31")});
+        assert.deepEqual(utils.date.textToDateRange("2018-10-31", "tomorrow"), {start:new Date("2018-11-01"), end: new Date("2018-11-02")});
+        assert.deepEqual(utils.date.textToDateRange("2018-12-30", "tomorrow"), {start:new Date("2018-12-31"), end: new Date("2019-01-01")});
+
+        assert.deepEqual(utils.date.textToDateRange("2018-11-08", "this week"), {start:new Date("2018-11-04"), end: new Date("2018-11-10T23:59:59.000Z")});
+        assert.deepEqual(utils.date.textToDateRange("2018-12-31", "this week"), {start:new Date("2018-12-30"), end: new Date("2019-01-05T23:59:59.000Z")});
+
+        assert.deepEqual(utils.date.textToDateRange("2018-11-08", "next week"), {start:new Date("2018-11-11"), end: new Date("2018-11-17T23:59:59.000Z")});
+        assert.deepEqual(utils.date.textToDateRange("2018-12-31", "next week"), {start:new Date("2019-01-06"), end: new Date("2019-01-12T23:59:59.000Z")});
+      });
+    });
     describe('max', () => {
       it('should return the latest date of the two', () => {
         assert.deepEqual(utils.date.max("2018-10-28", "2018-10-27"), new Date("2018-10-28"));
@@ -141,6 +154,27 @@ describe('Utils test', () => {
         assert.equal(utils.date.isSameDay(new Date(null), null), false);
       })
     });
+    describe('isAdjoiningDate',()=>{
+      it('should return true if there is 1 day or less of difference between two dates', () => {
+        assert.equal(utils.date.isAdjoiningDate("2018-10-28", "2018-10-29"), true);
+        assert.equal(utils.date.isAdjoiningDate("2018-10-29", "2018-10-28"), true);
+
+        assert.equal(utils.date.isAdjoiningDate("2018-10-28 10:30:00", "2018-10-29 08:00:00"), true);
+        assert.equal(utils.date.isAdjoiningDate("2018-10-29 08:00:00", "2018-10-28 10:30:00"), true);
+
+        assert.equal(utils.date.isAdjoiningDate("2018-10-28 07:30:00", "2018-10-29 08:00:00"), false);
+        assert.equal(utils.date.isAdjoiningDate("2018-10-29 08:00:00", "2018-10-28 07:30:00"), false);
+
+        assert.equal(utils.date.isAdjoiningDate("2018-11-10T17:00:00", "2018-11-11T08:30:00"), true);
+        assert.equal(utils.date.isAdjoiningDate("2018-11-11T08:30:00", "2018-11-10T17:00:00"), true);
+      });
+      it('should cope with nulls', () => {
+        assert.equal(utils.date.isAdjoiningDate("2018-10-28", null), false);
+        assert.equal(utils.date.isAdjoiningDate(null, "2018-10-28"), false);
+        assert.equal(utils.date.isAdjoiningDate(null, new Date(null)), false);
+        assert.equal(utils.date.isAdjoiningDate(new Date(null), null), false);
+      })
+    }),
     describe('addDays', () => {
       it('should increase the number of days by the amount provided', () => {
         assert.deepEqual(utils.date.addDays("2018-01-01", 1), new Date("2018-01-02"));
@@ -204,6 +238,25 @@ describe('Utils test', () => {
         assert.equal(utils.string.getMatchingStartingWord("Hello world", ["Hello", "Bye"]), "Hello");
         assert.equal(utils.string.getMatchingStartingWord("Hello world", ["Bye", "Hello"]), "Hello");
         assert.equal(utils.string.getMatchingStartingWord("Hello world", ["Bye", "hello"]), "Hello");
+      });
+    });
+  });
+  describe('Object utils', () => {
+    describe('clone', () => {
+      it('should produce an entirely new clone', () => {
+        const object = {"value": 1, "nested":{"value":2}};
+        assert.notEqual(object, utils.object.clone(object));
+        assert.deepEqual(object, utils.object.clone(object));
+      });
+      it('should not affect original\'s values', () => {
+        const object = {"value": 1, "nested":{"value":2}};
+        const clone = utils.object.clone(object);
+        clone.value = 2;
+        clone.nested.value = 3;
+        assert.notEqual(object.value, 2);
+        assert.notEqual(object.nested.value, 3);
+        assert.equal(clone.value, 2);
+        assert.equal(clone.nested.value, 3);
       });
     });
   });

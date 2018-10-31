@@ -17,6 +17,30 @@ const arrayUtils = {
 };
 
 const dateUtils = {
+  midnightToday: () => {
+    const midnightTodayDate = new Date();
+    midnightTodayDate.setHours(0);
+    midnightTodayDate.setMinutes(0);
+    midnightTodayDate.setSeconds(0);
+    midnightTodayDate.setMilliseconds(0);
+    return midnightTodayDate;
+  },
+  textToDateRange: (date, text) => {
+    if (text === "tomorrow") {
+      return {
+        start: dateUtils.addDays(date, 1),
+        end: dateUtils.addDays(date, 2)
+      }
+    } else {
+      if (text === "this week") {
+        return dateUtils.getWeekRange(date);
+      } else if (text === "next week") {
+        return dateUtils.getWeekRange(dateUtils.addDays(date, 8));
+      }
+    }
+
+    return null;
+  },
   max: (date1, date2) => {
     if (!date1 && !date2) {
       return null;
@@ -52,6 +76,16 @@ const dateUtils = {
   },
   isSameDay: (date1, date2) => {
     return dateUtils.formatDate(date1) === dateUtils.formatDate(date2);
+  },
+  isAdjoiningDate: (date1, date2) => {
+    if(!date1 || !date2){
+      return false;
+    }
+    const d1=new Date(date1);
+    const d2=new Date(date2);
+    const start = d1<d2 ? d1 : d2;
+    const end = d1<d2 ? d2 : d1;
+    return ((end - start)/1000/60/60/24) <= 1
   },
   addDays: (date, days) => {
     if (!date) {
@@ -93,6 +127,13 @@ const stringUtils = {
   }
 };
 
+const objectUtils = {
+  clone:(o)=>{
+    return JSON.parse(JSON.stringify(o));
+  }
+};
+
 module.exports.string = stringUtils;
 module.exports.date = dateUtils;
 module.exports.array = arrayUtils;
+module.exports.object = objectUtils;

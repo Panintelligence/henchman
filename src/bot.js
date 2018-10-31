@@ -131,50 +131,13 @@ bot.on('message', (user, userID, channelID, message, evt) => {
             }
           });
         } else {
-          let dateRange
-          const midnightTodayDate = new Date();
-          midnightTodayDate.setHours(0);
-          midnightTodayDate.setMinutes(0);
-          midnightTodayDate.setSeconds(0);
-          midnightTodayDate.setMilliseconds(0);
-          if (param === "tomorrow") {
-            dateRange = {
-              start: utils.date.addDays(midnightTodayDate, 1),
-              end: utils.date.addDays(midnightTodayDate, 2)
-            }
-          } else {
-            if (param === "this week") {
-              dateRange = utils.date.getWeekRange(midnightTodayDate);
-            } else if (param === "next week") {
-              dateRange = utils.date.getWeekRange(utils.date.addDays(midnightTodayDate, 8));
-            } else {
-              return;
-            }
+          const dateRange = utils.date.textToDateRange(utils.date.midnightToday(), param);
+          if(!dateRange){
+            return;
           }
+
           Staffsquared.absencesFuture(msgInfo, (absentees) => {
-            const absenteeNames = absentees
-              .filter((p) => {
-                return dateRange.start <= new Date(p['EventEnd']) && dateRange.end >= new Date(p['EventStart']);
-              })
-              .reduce((acc, p) => {
-                const existingPerson = acc.find((a) => {
-                  return a['EmployeeId'] === p['EmployeeId']
-                });
-                if (!existingPerson) {
-                  acc.push(p);
-                } else {
-                  if (utils.date.isSameDay(existingPerson['EventStart'], p['EventEnd']) || utils.date.isSameDay(existingPerson['EventEnd'], p['EventStart'])) {
-                    existingPerson['EventStart'] = utils.date.min(existingPerson['EventStart'], p['EventStart']);
-                    existingPerson['EventEnd'] = utils.date.max(existingPerson['EventEnd'], p['EventEnd']);
-                  } else {
-                    acc.push(p);
-                  }
-                }
-                return acc;
-              }, [])
-              .map((p) => {
-                return ` * **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})`
-              });
+            const absenteeNames = Staffsquared.getNamesInDateRange(absentees, dateRange);
             if (absenteeNames.length > 0) {
               chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are off ${param}:\n${absenteeNames.join('\n')}`);
             } else {
@@ -183,7 +146,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
           });
         }
       }
-    }, "[|today|tomorrow|this week|next week]", "See who's off");
+    }, "[|today|tomorrow|this week|next week]", "See who's out");
 
   protectedCommand(msgInfo, _.triggers.release,
     (info, command, match) => {

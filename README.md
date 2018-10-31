@@ -63,3 +63,16 @@ Clone the `gitlab-config.json.template` into `gitlab-config.json` and fill the f
   "token": "your-gitlab-token"
 }
 ```
+
+## jira-config.json
+Clone the `jira-config.json.template` into `jira-config.json` and fill the following settings:
+```json
+{
+  "protocol": "https",
+  "host": "your.jira.url",
+  "projects": [
+    { "code":"PROJECT1", "issueStart": 5000 },
+    { "code":"PROJECT2", "issueStart": 1, "default": true }
+  ]
+}
+```
