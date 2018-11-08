@@ -175,7 +175,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
   protectedCommand(msgInfo, _.triggers.build,
     (info, command, match) => {
       const b = info.message.indexOf(command) !== -1 ? info.message.split(command)[1].trim() : null;
-      const branch = match[6] || b || jenkinsConfig.defaultBranch;
+      const branch = match[7] || b || jenkinsConfig.defaultBranch;
       chat(info.bot, info.channelID, `Sure, <@${info.userID}>. I've asked Jenkins to build from \`${branch}\`.`);
       Jenkins.requestBuild(branch, msgInfo);
     }, "[|branch]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);

@@ -230,10 +230,12 @@ describe('Bot test', () => {
       it(`should execute when the message matches the regex: ${bot.triggers.build.regex}`, () => {
         const executed = [];
         let notExecuted = [];
+        const matches = [];
 
         ["Hello",
           "aksdjijqwi",
           "Mr Bot, start a build please",
+          "start build from release_branch",
           "Can anyone start a build?",
           "Start a build for this_branch",
           "Can I have a build from master please?",
@@ -244,17 +246,22 @@ describe('Bot test', () => {
           "build from master",
         ].forEach((m)=>{
           notExecuted.push(m);
-          bot.command({ message:m }, null, bot.triggers.build.regex, (i) => {
+          bot.command({ message:m }, null, bot.triggers.build.regex, (i, _, match) => {
             executed.push(i.message);
             notExecuted = notExecuted.filter(c => c !== m);
+            if(match[7]){
+              matches.push(match[7]);
+            }
           });
         });
 
         assert.deepEqual(executed, ["Mr Bot, start a build please",
+        "start build from release_branch",
         "Can anyone start a build?",
         "Start a build for this_branch",
         "Can I have a build from master please?",
         "<@1111> make a build"]);
+        assert.deepEqual(matches, ['release_branch', 'this_branch', 'master']);
         assert.deepEqual(notExecuted, ["Hello", "aksdjijqwi", "build master", "start building stuff", "this is a good build for mage",
           "build from master",]);
       });
