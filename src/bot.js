@@ -241,6 +241,11 @@ If anyone asks what the release branch is I'll try to find the latest one too!`)
   }, null, "This info");
 
   if(!wasPoke){
+    if(!pokedBy[userID]){
+      pokedBy[userID] = {
+        times: 0
+      }
+    }
     pokedBy[userID].times = 0;
   }
 });

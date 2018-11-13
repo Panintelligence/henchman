@@ -1,8 +1,8 @@
 #!/bin/bash
 
 CONFIG_DIR="/var/discordbot"
-IMAGE="discord-builder-bot"
-NAME="discord-builder-bot"
+IMAGE="henchman-discord-bot"
+NAME="henchman-discord-bot"
 PARENT=`ip route show | grep docker0 | awk '{print \$9}'`
 
 if [ ! -d "$CONFIG_DIR" ]; then
