@@ -80,6 +80,10 @@ bot.on('ready', (evt) => {
   });
 });
 
+const pokedBy = {
+
+};
+
 bot.on('message', (user, userID, channelID, message, evt) => {
   if (userID === bot.id) {
     return;
@@ -96,9 +100,27 @@ bot.on('message', (user, userID, channelID, message, evt) => {
     userID: userID
   };
 
+  let wasPoke = false;
+
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
-      chat(bot, channelID, `Yeah yeah, I'm here, <@${userID}>`);
+      if(!pokedBy[userID]){
+        pokedBy[userID] = {
+          times: 0
+        }
+      }
+      const messages = [
+        `I'm here, <@${userID}>`,
+        `Yeah yeah, I'm here, <@${userID}>`,
+        `Just cut it out, <@${userID}>! :angry:`,
+        `I'm not replying about this anymore, <@${userID}>`
+      ]
+      if(pokedBy[userID].times < messages.length){
+        chat(bot, channelID, messages[pokedBy[userID].times]);
+      }
+      pokedBy[userID].times++;
+
+      wasPoke = true;
     }, null, "Check if I'm around");
 
   unprotectedCommand(msgInfo, _.triggers.jiraProjects,
@@ -217,4 +239,8 @@ In addition, I respond to plain english requests that contain the words:
   * \`cancel\` paired with \`build\` or \`queue\` and a build/queue \`number\`.
 If anyone asks what the release branch is I'll try to find the latest one too!`);
   }, null, "This info");
+
+  if(!wasPoke){
+    pokedBy[userID].times = 0;
+  }
 });
