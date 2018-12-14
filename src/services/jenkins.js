@@ -83,7 +83,7 @@ const jenkins = {
     });
     const body = jenkins._.toJenkinsBody(buildParams);
 
-    const request = makeJenkinsRequest('POST', `/${DEFAULT_PROJECT}/build`, body, null, (r) => {
+    const request = makeJenkinsRequest('POST', `/${DEFAULT_PROJECT}/build`, body, null, (res) => {
       jenkins.fetchQueueItems((queueResString) => {
         const queuedItems = jenkins._.getQueuedItems(JSON.parse(queueResString).items, jenkinsConfig.project);
 
@@ -98,9 +98,9 @@ const jenkins = {
             jenkins.fetchBuildInfo(lastBuild.number, (buildInfoString) => {
               const buildInfo = JSON.parse(buildInfoString);
               if (buildInfo.building) {
-                chat(msgInfo.bot, msgInfo.channelID, `Your build (${lastBuild.number}) is now running, <@${userID}>: ${lastBuild.url}`);
+                chat(msgInfo.bot, msgInfo.channelID, `Your build (${lastBuild.number}) is now running, <@${msgInfo.userID}>: ${lastBuild.url}`);
               } else {
-                chat(msgInfo.bot, msgInfo.channelID, `I'm not sure what happened to your build, <@${userID}>. It might have failed right away. The last build was ${buildInfo.url}`);
+                chat(msgInfo.bot, msgInfo.channelID, `I'm not sure what happened to your build, <@${msgInfo.userID}>. It might have failed right away. The last build was ${buildInfo.url}`);
               }
             });
           });

@@ -193,7 +193,6 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       Gitlab.branchList(filter, msgInfo);
     }, "[|filter]", "I'll list all the branches in git. Optionally pass a filter to \"grep\" by");
 
-
   protectedCommand(msgInfo, _.triggers.build,
     (info, command, match) => {
       const b = info.message.indexOf(command) !== -1 ? info.message.split(command)[1].trim() : null;
