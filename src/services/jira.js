@@ -1,4 +1,36 @@
 const config = require('../config/jira-config.json');
+const http = require('https');
+
+
+const jiraGet = (url, success, fail) => {
+  http.get(url, (res) => {
+    const chunks = [];
+    res.on('data', (chunk) => {
+      chunks.push(chunk);
+    });
+    if(res.statusCode >= 200 && res.statusCode < 300){
+      res.on('end', () => {
+        let data = "";
+        try {
+          data = Buffer.concat(chunks).toString();
+        } catch (e) {
+          data = chunks.join("");
+        }
+
+        if (success) {
+          success(data);
+        }
+      });  
+    }
+    else {
+      fail({});
+    }
+  }).on('error', (e) => {
+    if(fail){
+      fail(e);
+    }
+  });
+};
 
 const _matchesToIssueLinks = (message, matches, isPermitted, jiraConfig) => {
   return matches.map(m => m.trim())
@@ -37,12 +69,21 @@ const _matchesToIssueLinks = (message, matches, isPermitted, jiraConfig) => {
       return !!m
     });
 };
+
 const matchesToIssueLinks = (message, matches, isPermitted) => {
   return _matchesToIssueLinks(message, matches, isPermitted, config);
 }
 
+const checkIssueExists = (link, success, fail) => {
+  jiraGet(link, success, (e) => {
+    console.log(e);
+    fail(e);
+  })
+}
+
 module.exports = {
   matchesToIssueLinks: matchesToIssueLinks,
+  checkIssueExists: checkIssueExists,
   _: {
     matchesToIssueLinks: _matchesToIssueLinks
   }

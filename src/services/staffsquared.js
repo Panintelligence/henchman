@@ -10,6 +10,16 @@ const utils = require('../utils/utils');
 let TOKEN = null;
 let expiresAt = 0;
 
+const EVENT_TYPE_IDS = {
+  holiday: 1,
+  sickness: 2,
+  remote: 8
+};
+const EVENT_TYPES = {}
+EVENT_TYPES[EVENT_TYPE_IDS.holiday] = "Holiday";
+EVENT_TYPES[EVENT_TYPE_IDS.sickness] = "Sickness";
+EVENT_TYPES[EVENT_TYPE_IDS.remote] = "Working Remotely";
+
 const makeGenericStaffsquaredRequest = (method, path, body, callback, onRequest) => {
   const headers = {
     'Accept': 'application/json'
@@ -90,8 +100,26 @@ const getNamesInDateRange = (absentees, dateRange) => {
     }
     return acc;
   }, [])
+  .sort((p1, p2) => {
+    if(p1['EventTypeId'] > p2['EventTypeId']){
+      return 1;
+    }
+    if(p1['EventTypeId'] < p2['EventTypeId']){
+      return -1;
+    }
+    return 0;
+  })
+  .sort((p1, p2) => {
+    if(p1['EventStart'] > p2['EventStart']){
+      return 1;
+    }
+    if(p1['EventStart'] < p2['EventStart']){
+      return -1;
+    }
+    return 0;
+  })
   .map((p) => {
-    return ` * **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})`
+    return ` * (${EVENT_TYPES[p['EventTypeId']]}) **${p['FirstName']} ${p['LastName']}** (${utils.date.formatHumanISO(p['EventStart'])} to ${utils.date.formatHumanISO(p['EventEnd'])})`
   });
 };
 
@@ -106,5 +134,6 @@ module.exports = {
       callback(JSON.parse(string));
     }));
   },
-  getNamesInDateRange: getNamesInDateRange
+  getNamesInDateRange: getNamesInDateRange,
+  EVENT_TYPES: EVENT_TYPES
 };

@@ -125,14 +125,33 @@ bot.on('message', (user, userID, channelID, message, evt) => {
 
   unprotectedCommand(msgInfo, _.triggers.jiraProjects,
     (info, command, match) => {
-      const issueLinks = Jira.matchesToIssueLinks(info.message, match, isPermitted(info));
-      if (issueLinks && issueLinks.length > 0) {
-        if (issueLinks.length > 1) {
-          chat(bot, channelID, `Those look like Jira issues:\n${issueLinks.join('\n')}`);
-        } else {
-          chat(bot, channelID, `That looks like a Jira issue: ${issueLinks[0]}`);
+      const issueLinkCandidates = Jira.matchesToIssueLinks(info.message, match, isPermitted(info));
+      const issueLinks = [];
+      const badIssueLinks = [];
+
+      const allDone = (processedLinksNumber, totalLinksNumber) => {
+        if(processedLinksNumber === totalLinksNumber){
+          if (issueLinks && issueLinks.length > 0) {
+            if (issueLinks.length > 1) {
+              chat(bot, channelID, `Those look like Jira issues:\n${issueLinks.join('\n')}`);
+            } else {
+              chat(bot, channelID, `That looks like a Jira issue: ${issueLinks[0]}`);
+            }
+          }
         }
-      }
+      };
+      
+      issueLinkCandidates.forEach((link)=>{
+        Jira.checkIssueExists(link,
+          () => {
+            issueLinks.push(link);
+            allDone(issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
+          },
+          () => {
+            badIssueLinks.push(link);
+            allDone(issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
+          })
+      });
     }, "<number>", `I will attempt to link any Jira issues for the following projects: ${jiraConfig.projects.map(p=>p.code).join(', ')}`);
 
   unprotectedCommand(msgInfo, _.triggers.holiday,
@@ -143,13 +162,23 @@ bot.on('message', (user, userID, channelID, message, evt) => {
 
         if (!param || param === "today") {
           Staffsquared.absencesToday(msgInfo, (absentees) => {
-            const absenteeNames = absentees.map((p) => {
-              return ` * **${p['FirstName']} ${p['LastName']}**`
-            });
+            const absenteeNames = absentees
+                .sort((p1, p2) => {
+                  if(p1['EventTypeId'] > p2['EventTypeId']){
+                    return 1;
+                  }
+                  if(p1['EventTypeId'] < p2['EventTypeId']){
+                    return -1;
+                  }
+                  return 0;
+                })
+                .map((p) => {
+                  return ` * (${Staffsquared.EVENT_TYPES[p['EventTypeId']]}) **${p['FirstName']} ${p['LastName']}**`
+                });
             if (absenteeNames.length > 0) {
-              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are off today:\n${absenteeNames.join('\n')}`);
+              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared these people are out of office today:\n${absenteeNames.join('\n')}`);
             } else {
-              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared, nobody is off today.`);
+              chat(bot, channelID, `<@${msgInfo.userID}>: According to StaffSquared, nobody is out of office today.`);
             }
           });
         } else {
