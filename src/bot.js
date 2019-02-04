@@ -10,6 +10,7 @@ const Jenkins = require('./services/jenkins');
 const Gitlab = require('./services/gitlab');
 const Jira = require('./services/jira');
 const Staffsquared = require('./services/staffsquared');
+const CloudflareStatus = require('./services/cloudflare-status');
 const chat = require('./utils/discord-chat');
 const utils = require('./utils/utils');
 const _ = require('./services/bot')
@@ -252,6 +253,11 @@ bot.on('message', (user, userID, channelID, message, evt) => {
         });
       }
     }, "[|build|queue] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
+
+  unprotectedCommand(msgInfo, _.triggers.cloudflareStatus,
+    (info, command, match) => {
+      CloudflareStatus.getOutages(info.bot, info.channelID);
+    }, null, "Check if there's a cloudflare problem");
 
   unprotectedCommand(msgInfo, _.triggers.help, () => {
     chat(bot, channelID, `Here's some info, <@${userID}>:

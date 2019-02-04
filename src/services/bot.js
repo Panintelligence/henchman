@@ -47,6 +47,10 @@ const triggers = {
     commands: ['!cancel'],
     regex: /.* *(cancel) .* *(build|queue) *(`|)((?!please\b)\b\w+)(`|)/i
   },
+  cloudflareStatus: {
+    commands: ['!argo', '!cloudflare'],
+    regex: null
+  },
   help: {
     commands: ['!info', '!help'],
     regex: null
