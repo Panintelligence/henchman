@@ -42,7 +42,7 @@ module.exports = {
         .map((component) => {
           return `  - **${component.name}**: \`${component.status}\``
         });
-      const message = (statuses.length !== 0) ? `Looks like we've got problems :disaprovingsteve:\n${statuses.join('\n')}` : "Everything is fine"
+      const message = (statuses.length !== 0) ? `Looks like we've got problems <:disaprovingsteve:503356072485060619>\n${statuses.join('\n')}` : "Everything is fine"
       console.log(`Sending ${message}`)
       chat(bot, channel, message)
     }).end()
