@@ -1,4 +1,4 @@
-# [Henchman Logo](changes/images/henchman-logo-small.png) Henchman: a bot for Discord
+# ![Henchman Logo](changes/images/henchman-logo-small.png) Henchman: a bot for Discord
 A bot that lets you interact with various tools via Discord
 
 # Features
