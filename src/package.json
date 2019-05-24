@@ -1,7 +1,7 @@
 {
-  "name": "builder-bot",
-  "version": "1.0.0",
-  "description": "This bot starts a build everytime someone asks for a build to be made",
+  "name": "henchman-discord-bot",
+  "version": "1.1.0",
+  "description": "A bot that lets you interact with various tools via Discord",
   "main": "bot.js",
   "author": "Tiago \"Dosaki\" Correia",
   "dependencies": {
@@ -14,5 +14,26 @@
   },
   "devDependencies": {
     "mocha": "^5.2.0"
-  }
+  },
+  "scripts": {
+    "test": "mocha ../tests/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Panintelligence/henchman.git"
+  },
+  "keywords": [
+    "bot",
+    "discord",
+    "jenkins",
+    "jira",
+    "gitlab",
+    "staffsquared",
+    "javascript"
+  ],
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/Panintelligence/henchman/issues"
+  },
+  "homepage": "https://github.com/Panintelligence/henchman#readme"
 }
