@@ -3,6 +3,7 @@
 const discordConfig = require('./config/discord-config.json');
 const jenkinsConfig = require('./config/jenkins-config.json');
 const jiraConfig = require('./config/jira-config.json');
+const gitlabConfig = require('./config/gitlab-config.json');
 
 const Discord = require('discord.io');
 const logger = require('winston');
@@ -13,7 +14,7 @@ const Staffsquared = require('./services/staffsquared');
 const CloudflareStatus = require('./services/cloudflare-status');
 const chat = require('./utils/discord-chat');
 const utils = require('./utils/utils');
-const _ = require('./services/bot')
+const _ = require('./services/bot');
 
 const WHITELISTED_ROLES = {};
 const WHITELISTED_CHANNELS = {};
@@ -130,13 +131,13 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       const issueLinks = [];
       const badIssueLinks = [];
 
-      const allDone = (processedLinksNumber, totalLinksNumber) => {
+      const allDone = (issues, processedLinksNumber, totalLinksNumber) => {
         if(processedLinksNumber === totalLinksNumber){
-          if (issueLinks && issueLinks.length > 0) {
-            if (issueLinks.length > 1) {
-              chat(bot, channelID, `Those look like Jira issues:\n${issueLinks.join('\n')}`);
+          if (issues && issues.length > 0) {
+            if (issues.length > 1) {
+              chat(bot, channelID, `Those look like Jira issues:\n ${issues.join('\n')}`);
             } else {
-              chat(bot, channelID, `That looks like a Jira issue: ${issueLinks[0]}`);
+              chat(bot, channelID, `That looks like a Jira issue:\n ${issues[0]}`);
             }
           }
         }
@@ -144,13 +145,14 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       
       issueLinkCandidates.forEach((link)=>{
         Jira.checkIssueExists(link,
-          () => {
-            issueLinks.push(link);
-            allDone(issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
+          (rawData) => {
+            const data = JSON.parse(rawData);
+            issueLinks.push(`${Jira.issueTypeIcons[data.fields.issuetype.name.toLowerCase()]} ${data.fields.summary} - ${link}`);
+            allDone(issueLinks, issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
           },
           () => {
             badIssueLinks.push(link);
-            allDone(issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
+            allDone(issueLinks, issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
           })
       });
     }, "<number>", `I will attempt to link any Jira issues for the following projects: ${jiraConfig.projects.map(p=>p.code).join(', ')}`);
@@ -205,7 +207,7 @@ bot.on('message', (user, userID, channelID, message, evt) => {
       Gitlab.branchList(null, msgInfo, (branchesString) => {
         const branches = JSON.parse(branchesString);
         const branchNames = branches.filter((b) => {
-            return b.name.indexOf("release") !== -1;
+            return new RegExp(gitlabConfig.releaseBranchPattern).test(b.name);
           })
           .sort((a, b) => {
             return a.commit.committed_date < b.commit.committed_date ? 1 : (a.commit.committed_date > b.commit.committed_date ? -1 : 0);

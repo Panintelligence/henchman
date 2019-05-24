@@ -2,5 +2,6 @@
   "protocol": "https",
   "host": "your.host.here",
   "projectId": 0,
-  "token": "your-gitlab-token"
+  "token": "your-gitlab-token",
+  "releaseBranchPattern": "[0-9].[0-9].[0-9]])"
 }

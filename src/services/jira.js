@@ -93,6 +93,7 @@ const checkIssueExists = (link, success, fail) => {
 module.exports = {
   matchesToIssueLinks: matchesToIssueLinks,
   checkIssueExists: checkIssueExists,
+  issueTypeIcons: config.issueTypeIcons,
   _: {
     matchesToIssueLinks: _matchesToIssueLinks
   }
