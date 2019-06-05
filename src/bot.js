@@ -5,7 +5,7 @@ const jenkinsConfig = require('./config/jenkins-config.json');
 const jiraConfig = require('./config/jira-config.json');
 const gitlabConfig = require('./config/gitlab-config.json');
 
-const Discord = require('discord.io');
+const Discord = require('discord.js');
 const logger = require('winston');
 const Jenkins = require('./services/jenkins');
 const Gitlab = require('./services/gitlab');
@@ -16,6 +16,7 @@ const chat = require('./utils/discord-chat');
 const utils = require('./utils/utils');
 const _ = require('./services/bot');
 
+const SERVERS = {};
 const WHITELISTED_ROLES = {};
 const WHITELISTED_CHANNELS = {};
 
@@ -56,27 +57,28 @@ logger.level = 'debug';
 
 // Initialize Discord Bot
 const bot = new Discord.Client({
-  token: discordConfig.token,
   autorun: true
 });
+bot.login(discordConfig.token);
 
-bot.on('ready', (evt) => {
+bot.once('ready', (evt) => {
   logger.info('Connected');
   logger.info('Logged in as: ');
-  logger.info(bot.username + ' - (' + bot.id + ')');
-  Object.keys(bot.servers).forEach((serverId) => {
-    WHITELISTED_ROLES[serverId] = [];
-    WHITELISTED_CHANNELS[serverId] = [];
+  logger.info(bot.user.username + ' - (' + bot.user.id + ')');
+  bot.guilds.array().forEach((server) => {
+    SERVERS[server.id] = server;
+    WHITELISTED_ROLES[server.id] = [];
+    WHITELISTED_CHANNELS[server.id] = [];
 
-    Object.keys(bot.servers[serverId].roles).forEach((roleId) => {
-      if (discordConfig.roleWhitelist.includes(bot.servers[serverId].roles[roleId].name)) {
-        WHITELISTED_ROLES[serverId].push(roleId);
+    server.roles.array().forEach((role) => {
+      if (discordConfig.roleWhitelist.includes(role.name)) {
+        WHITELISTED_ROLES[server.id].push(role.id);
       }
     });
 
-    Object.keys(bot.servers[serverId].channels).forEach((channelId) => {
-      if (discordConfig.channelWhitelist.includes(bot.servers[serverId].channels[channelId].name)) {
-        WHITELISTED_CHANNELS[serverId].push(channelId);
+    server.channels.array().forEach((channel) => {
+      if (discordConfig.channelWhitelist.includes(channel.name)) {
+        WHITELISTED_CHANNELS[server.id].push(channel.id);
       }
     });
   });
@@ -86,12 +88,12 @@ const pokedBy = {
 
 };
 
-bot.on('message', (user, userID, channelID, message, evt) => {
-  if (userID === bot.id) {
+bot.on('message', (message) => {
+  if (message.user.id === bot.user.id) {
     return;
   }
 
-  logger.info(message);
+  logger.info([message.user.name, message.content]);
 
   const msgInfo = {
     serverId: evt.d['guild_id'] || null,
