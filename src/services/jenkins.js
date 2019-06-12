@@ -90,7 +90,7 @@ const jenkins = {
         if (queuedItems.length !== 0) {
           const queueItem = Math.max.apply(null, queuedItems);
           const itemsAhead = jenkins._.getItemsAheadText(queuedItems, queueItem);
-          chat(msgInfo.bot, msgInfo.channelID, `Your build has been queued with the item number ${queueItem}, <@${msgInfo.userID}>. There's one item currently building and ${itemsAhead} queued in front of it.`);
+          chat(msgInfo.bot, msgInfo.channel, `Your build has been queued with the item number ${queueItem}, <@${msgInfo.user.id}>. There's one item currently building and ${itemsAhead} queued in front of it.`);
         } else {
           jenkins.fetchProjectInfo((projectInfoString) => {
             const projectInfo = JSON.parse(projectInfoString);
@@ -98,9 +98,9 @@ const jenkins = {
             jenkins.fetchBuildInfo(lastBuild.number, (buildInfoString) => {
               const buildInfo = JSON.parse(buildInfoString);
               if (buildInfo.building) {
-                chat(msgInfo.bot, msgInfo.channelID, `Your build (${lastBuild.number}) is now running, <@${msgInfo.userID}>: ${lastBuild.url}`);
+                chat(msgInfo.bot, msgInfo.channel, `Your build (${lastBuild.number}) is now running, <@${msgInfo.user.id}>: ${lastBuild.url}`);
               } else {
-                chat(msgInfo.bot, msgInfo.channelID, `I'm not sure what happened to your build, <@${msgInfo.userID}>. It might have failed right away. The last build was ${buildInfo.url}`);
+                chat(msgInfo.bot, msgInfo.channel, `I'm not sure what happened to your build, <@${msgInfo.user.id}>. It might have failed right away. The last build was ${buildInfo.url}`);
               }
             });
           });

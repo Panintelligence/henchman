@@ -36,28 +36,52 @@ const makeGitlabRequest = (method, path, body, callback, onRequest) => {
 
 
 const createBranchesMessages = (branchNames, msgInfo) => {
-  if (msgInfo && msgInfo.channelID && msgInfo.userID && branchNames) {
+  if (msgInfo && msgInfo.channel && msgInfo.user && branchNames) {
     if (branchNames.length > 10) {
-      return [{
-          channel: msgInfo.channelID,
-          message: `There's lots of branches, <@${msgInfo.userID}>! I've sent you a PM.`
-        },
-        {
-          channel: msgInfo.userID,
-          message: `Here's what I found:\n${branchNames.map((b)=>{return `  * \`${b}\``}).join('\n')}`
+      const messagesToSend = [{
+        channel: msgInfo.channel,
+        message: `There's lots of branches, <@${msgInfo.user.id}>! I've sent you a PM.`
+      },
+      {
+        channel: msgInfo.user,
+        message: `Here's what I found:`
+      }];
+
+      const branchMessages = [""];
+
+      branchNames.forEach((b) => {
+        let i = branchMessages.length - 1;
+        const msgToAdd = `  * \`${b}\`\n`;
+
+        if (branchMessages[i].length + msgToAdd.length >= 2000) {
+          branchMessages[i] = branchMessages[i].replace(/\n$/, "");
+          branchMessages.push([""]);
+          i++;
         }
-      ];
+
+        branchMessages[i] += `* \`${b}\`\n`
+      });
+      branchMessages[branchMessages.length - 1] = branchMessages[branchMessages.length - 1].replace(/\n$/, "");
+
+      branchMessages.forEach((msg) => {
+        messagesToSend.push({
+          channel: msgInfo.user,
+          message: msg
+        });
+      })
+
+      return messagesToSend;
     }
     if (branchNames.length === 0) {
       return [{
-        channel: msgInfo.channelID,
+        channel: msgInfo.channel,
         message: `I could not find any branches, <@${msgInfo.userID}>.`
       }]
     }
 
     return [{
-      channel: msgInfo.channelID,
-      message: `Here's what I found, <@${msgInfo.userID}>:\n${branchNames.map((b)=>{return `  * \`${b}\``}).join('\n')}`
+      channel: msgInfo.channel,
+      message: `Here's what I found, <@${msgInfo.userID}>:\n${branchNames.map((b) => { return `  * \`${b}\`` }).join('\n')}`
     }]
   }
 
@@ -79,7 +103,7 @@ const createListOfBranches = (branches, filter) => {
 
 const gitlab = {
   branchList: (filter, msgInfo, callback) => {
-    chat(msgInfo.bot, msgInfo.channelID, `Hold on while I try to find out, <@${msgInfo.userID}>...`);
+    chat(msgInfo.bot, msgInfo.channel, `Hold on while I try to find out, <@${msgInfo.user.id}>...`);
     makeGitlabRequest('GET', `/api/v4/projects/${gitlabConfig.projectId}/repository/branches?per_page=999999999`, null, callback || ((branchesString) => {
       const branchNames = createListOfBranches(JSON.parse(branchesString), filter);
       createBranchesMessages(branchNames, msgInfo).forEach((m) => {
