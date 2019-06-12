@@ -159,7 +159,7 @@ bot.on('message', (message) => {
     (info, command, match) => {
       let mentionedUser = null;
       if (info.message.indexOf(command) !== -1) {
-        mentionedUser = (info.message.split(command)[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        mentionedUser = (info.message.split(command)[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
         if (!_.userInServer(info.channel.guild, mentionedUser)) {
           mentionedUser = null;
         }
@@ -180,7 +180,7 @@ bot.on('message', (message) => {
     (info, command, match) => {
       let mentionedUser = null;
       if (info.message.indexOf(command) !== -1) {
-        mentionedUser = (info.message.split(command)[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        mentionedUser = (info.message.split(command)[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
         if (!_.userInServer(info.channel.guild, mentionedUser)) {
           mentionedUser = null;
         }
@@ -205,7 +205,7 @@ bot.on('message', (message) => {
       if (info.message.indexOf(command) !== -1) {
         const msg = (info.message.split(command)[1] || "").trim().split(' ');
         awardedItem = (msg[0] || "").trim() || null;
-        mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
         quantity = Number((msg[2] || "").trim()) || 1;
         if (!_.userInServer(info.channel.guild, mentionedUser)) {
           mentionedUser = null;
@@ -229,7 +229,7 @@ bot.on('message', (message) => {
       if (info.message.indexOf(command) !== -1) {
         const msg = (info.message.split(command)[1] || "").trim().split(' ');
         awardedItem = (msg[0] || "").trim() || null;
-        mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
         quantity = Number((msg[2] || "").trim()) || 1;
       }
 
@@ -238,7 +238,7 @@ bot.on('message', (message) => {
       } else {
         const totalQuantity = awards.removeDebt(mentionedUser, info.user.id, awardedItem, quantity);
         if (totalQuantity === false) {
-          chat(bot, info.channel, `<@${mentionedUser}> never owed you a ${awardedItem}, <@${info.user.id}>.`);
+          chat(bot, info.channel, `<@${mentionedUser}> never owed you ${awardedItem}, <@${info.user.id}>.`);
         } else {
           chat(bot, info.channel, `<@${mentionedUser}> now owes <@${info.user.id}> ${totalQuantity}x ${awardedItem}.`);
         }
@@ -403,10 +403,27 @@ bot.on('message', (message) => {
     }, null, "Check if there's a cloudflare problem");
 
   unprotectedCommand(msgInfo, _.triggers.help, (info, command, match) => {
-    chat(info.bot, info.channel, `Here's some info, <@${info.user.id}>:
-  Commands:
-${Object.values(helpCommands).join("\n")}
+    chat(info.bot, info.channel, `I send you a PM with all the commands, <@${info.user.id}>.`);
+    chat(info.bot, info.user, `Commands:`);
+    const allCommands = [];
+    let partialCommands = [];
+    Object.values(helpCommands).forEach((helpCommand) => {
+      if (partialCommands.join('\n').length + helpCommand.length >= 2000) {
+        allCommands.push(partialCommands.join('\n'));
+        partialCommands = [];
+      }
+      partialCommands.push(helpCommand);
+    });
 
+    if (partialCommands.length !== 0) {
+      allCommands.push(partialCommands.join('\n'));
+    }
+
+    allCommands.forEach((helpCommands) => {
+      chat(info.bot, info.user, helpCommands);
+    });
+    chat(info.bot, info.user, `
+----
 ***(protected)** commands can only be issued from privileged channels and by privileged roles.*
   * *Channels: ${discordConfig.channelWhitelist.map((r) => { return `#${r}` }).join(', ')}*
   * *Roles:  ${discordConfig.roleWhitelist.join(', ')}*

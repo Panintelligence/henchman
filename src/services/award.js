@@ -57,10 +57,10 @@ const AwardManager = function () {
             return false;
         }
 
-        const newDebt = owed[recipient][item][sender];
         owed[recipient][item][sender] = Math.max(owed[recipient][item][sender] - quantity, 0);
         owes[sender][item][recipient] = Math.max(owes[sender][item][recipient] - quantity, 0);
-
+        const newDebt = owed[recipient][item][sender];
+        
         if (owed[recipient][item][sender] === 0) {
             delete owed[recipient][item][sender];
             delete owes[sender][item][recipient];
