@@ -17,10 +17,38 @@ const command = (info, bangCommands, regex, f) => {
   }
 };
 
+const userInServer = (server, userID) => {
+  return server.members.array().map(m => m.id).includes(userID);
+};
+
+const userIDToUser = (userID, server) => {
+  return server.members.array().find(m => m.id === userID);
+};
+
 const triggers = {
   poke: {
     commands: ['!poke'],
     regex: /.* *(is |)(the |) *bot (is |)(on(line|)|around)\?/i
+  },
+  award: {
+    commands: ['!award', '!give'],
+    regex: null
+  },
+  payoff: {
+    commands: ['!payoff', '!deaward'],
+    regex: null
+  },
+  owed: {
+    commands: ['!owed'],
+    regex: null
+  },
+  owe: {
+    commands: ['!owe'],
+    regex: null
+  },
+  ignore: {
+    commands: ['!ignore'],
+    regex: null
   },
   jiraProjects: {
     commands: jiraConfig.projects.map(p => `!${p.code}`),
@@ -60,5 +88,7 @@ const triggers = {
 module.exports = {
   isPermitted: isPermitted,
   command: command,
+  userInServer: userInServer,
+  userIDToUser: userIDToUser,
   triggers: triggers
 }

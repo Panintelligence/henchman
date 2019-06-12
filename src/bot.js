@@ -12,6 +12,7 @@ const Gitlab = require('./services/gitlab');
 const Jira = require('./services/jira');
 const Staffsquared = require('./services/staffsquared');
 const CloudflareStatus = require('./services/cloudflare-status');
+const AwardManager = require('./services/award');
 const chat = require('./utils/discord-chat');
 const utils = require('./utils/utils');
 const _ = require('./services/bot');
@@ -84,20 +85,28 @@ bot.once('ready', (evt) => {
   });
 });
 
-const pokedBy = {
+const pokedBy = {};
 
-};
+const ignoredUserIds = [];
+
+const awards = new AwardManager();
+if(awards.load()){
+  logger.warn("Unable to load saved files.")
+}
 
 bot.on('message', (message) => {
   if (message.author.id === bot.user.id) {
     return;
   }
+  if (ignoredUserIds.includes(message.author.id)) {
+    return;
+  }
 
-  logger.info([message.author.name, message.content]);
+  logger.info([message.author.username, message.content]);
 
   const msgInfo = {
     serverId: message.guild.id || null,
-    roleIds: message.member ? message.member.roles.array().map(r=>r.id) : null,
+    roleIds: message.member ? message.member.roles.array().map(r => r.id) : null,
     message: message.content,
     bot: bot,
     channel: message.channel,
@@ -108,24 +117,111 @@ bot.on('message', (message) => {
 
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
-      if(!pokedBy[info.user.id]){
+      if (!pokedBy[info.user.id]) {
         pokedBy[info.user.id] = {
           times: 0
         }
       }
-      const messages = ![
+      const messages = [
         `I'm here, <@${info.user.id}>`,
         `Yeah yeah, I'm here, <@${info.user.id}>`,
         `Just cut it out, <@${info.user.id}>! :angry:`,
         `I'm not replying about this anymore, <@${info.user.id}>`
       ]
-      if(pokedBy[info.user.id].times < messages.length){
+      if (pokedBy[info.user.id].times < messages.length) {
         chat(bot, info.channel, messages[pokedBy[info.user.id].times]);
       }
       pokedBy[info.user.id].times++;
 
       wasPoke = true;
     }, null, "Check if I'm around");
+
+  unprotectedCommand(msgInfo, _.triggers.ignore,
+    (info, command, match) => {
+      let mentionedUser = null;
+      if (info.message.indexOf(command) !== -1) {
+        mentionedUser = (info.message.split(command)[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        if (!_.userInServer(info.channel.guild, mentionedUser)) {
+          mentionedUser = null;
+        }
+      }
+      if (mentionedUser === null) {
+        chat(bot, info.channel, `You need to \`@\` a user for me to ignore.\nFor example: \`!ignore @code-ginger-ninja#9811\``);
+      } else if (mentionedUser === info.channel.guild.owner.user.id) {
+        chat(bot, info.channel, `I cannot ignore my master, <@${info.user.id}>.`);
+      } else {
+        chat(bot, info.channel, `All right, <@${info.user.id}>. Ignoring <@${mentionedUser}> from now on.`);
+      }
+    }, "<@user-reference>", "Tell me to ignore a user");
+
+  unprotectedCommand(msgInfo, _.triggers.award,
+    (info, command, match) => {
+      let awardedItem = null;
+      let mentionedUser = null;
+      let quantity = 1;
+      if (info.message.indexOf(command) !== -1) {
+        const msg = (info.message.split(command)[1] || "").trim().split(' ');
+        awardedItem = (msg[0] || "").trim() || null;
+        mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        quantity = Number((msg[2] || "").trim()) || 1;
+        if (!_.userInServer(info.channel.guild, mentionedUser)) {
+          mentionedUser = null;
+        }
+      }
+
+      if (mentionedUser === null || awardedItem === null || quantity <= 0) {
+        chat(bot, info.channel, `You need to \`@\` someone and specify what item to award (and how much as long as it's a positive number).\nFor example: \`!award beer @code-ginger-ninja#9811\` 10`);
+      } else {
+        const totalQuantity = awards.give(info.user.id, mentionedUser, awardedItem, quantity);
+        chat(bot, info.channel, `<@${info.user.id}> now owes <@${mentionedUser}> ${totalQuantity}x ${awardedItem}`);
+      }
+      awards.save();
+    }, "<item> <@recipient-user-reference> [|quantity]", "Award a user x items. If quantity is left empty (or is 0 or less), it defaults to 1.");
+
+  unprotectedCommand(msgInfo, _.triggers.payoff,
+    (info, command, match) => {
+      let awardedItem = null;
+      let mentionedUser = null;
+      let quantity = 1;
+      if (info.message.indexOf(command) !== -1) {
+        const msg = (info.message.split(command)[1] || "").trim().split(' ');
+        awardedItem = (msg[0] || "").trim() || null;
+        mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        quantity = Number((msg[2] || "").trim()) || 1;
+      }
+
+      if (mentionedUser === null || awardedItem === null || quantity <= 0) {
+        chat(bot, info.channel, `You need to \`@\` someone and specify what item to award (and how much as long as it's a positive number).\nFor example: \`!payoff beer @code-ginger-ninja#9811\` 10`);
+      } else {
+        const totalQuantity = awards.removeDebt(mentionedUser, info.user.id, awardedItem, quantity);
+        if (totalQuantity === false) {
+          chat(bot, info.channel, `<@${mentionedUser}> never owed you a ${awardedItem}, <@${info.user.id}>.`);
+        } else {
+          chat(bot, info.channel, `<@${mentionedUser}> now owes <@${info.user.id}> ${totalQuantity}x ${awardedItem}.`);
+        }
+        awards.save();
+      }
+    }, "<item> <@sender-user-reference> [|quantity]", "Consider x items owed to you by a user paid off. If quantity is left empty (or is 0 or less), it defaults to 1.");
+
+  unprotectedCommand(msgInfo, _.triggers.owed,
+    (info, command, match) => {
+      const stuffOwed = awards.formatOwings(awards.getItemsOwedToUser(info.user.id), info.channel.guild);
+      if(stuffOwed === null){
+        chat(bot, info.channel, `No one owes you anything, <@${info.user.id}>.`);
+      } else {
+        chat(bot, info.channel, `This is what people owe you, <@${info.user.id}>:\n${stuffOwed}`);
+      }
+    }, null, "Check who owes you stuff.");
+
+  unprotectedCommand(msgInfo, _.triggers.owe,
+    (info, command, match) => {
+      const stuffOwed = awards.formatOwings(awards.getItemsUserOwes(info.user.id), info.channel.guild);
+      if(stuffOwed === null){
+        chat(bot, info.channel, `You don't owe anything to anybody, <@${info.user.id}>.`);
+      } else {
+        chat(bot, info.channel, `This is what you owe others, <@${info.user.id}>:\n${stuffOwed}`);
+      }
+    }, null, "Check who do you owe stuff to.");
 
   unprotectedCommand(msgInfo, _.triggers.jiraProjects,
     (info, command, match) => {
@@ -134,7 +230,7 @@ bot.on('message', (message) => {
       const badIssueLinks = [];
 
       const allDone = (issues, processedLinksNumber, totalLinksNumber) => {
-        if(processedLinksNumber === totalLinksNumber){
+        if (processedLinksNumber === totalLinksNumber) {
           if (issues && issues.length > 0) {
             if (issues.length > 1) {
               chat(bot, info.channel, `Those look like Jira issues:\n ${issues.join('\n')}`);
@@ -144,20 +240,20 @@ bot.on('message', (message) => {
           }
         }
       };
-      
-      issueLinkCandidates.forEach((link)=>{
+
+      issueLinkCandidates.forEach((link) => {
         Jira.checkIssueExists(link,
           (rawData) => {
             const data = JSON.parse(rawData);
             issueLinks.push(`${Jira.issueTypeIcons[data.fields.issuetype.name.toLowerCase()]} ${data.fields.summary} - ${link}`);
-            allDone(issueLinks, issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
+            allDone(issueLinks, issueLinks.length + badIssueLinks.length, issueLinkCandidates.length);
           },
           () => {
             badIssueLinks.push(link);
-            allDone(issueLinks, issueLinks.length+badIssueLinks.length, issueLinkCandidates.length);
+            allDone(issueLinks, issueLinks.length + badIssueLinks.length, issueLinkCandidates.length);
           })
       });
-    }, "<number>", `I will attempt to link any Jira issues for the following projects: ${jiraConfig.projects.map(p=>p.code).join(', ')}`);
+    }, "<number>", `I will attempt to link any Jira issues for the following projects: ${jiraConfig.projects.map(p => p.code).join(', ')}`);
 
   unprotectedCommand(msgInfo, _.triggers.holiday,
     (info, command, match) => {
@@ -168,18 +264,18 @@ bot.on('message', (message) => {
         if (!param || param === "today") {
           Staffsquared.absencesToday(info, (absentees) => {
             const absenteeNames = absentees
-                .sort((p1, p2) => {
-                  if(p1['EventTypeId'] > p2['EventTypeId']){
-                    return 1;
-                  }
-                  if(p1['EventTypeId'] < p2['EventTypeId']){
-                    return -1;
-                  }
-                  return 0;
-                })
-                .map((p) => {
-                  return ` * (${Staffsquared.EVENT_TYPES[p['EventTypeId']]}) **${p['FirstName']} ${p['LastName']}**`
-                });
+              .sort((p1, p2) => {
+                if (p1['EventTypeId'] > p2['EventTypeId']) {
+                  return 1;
+                }
+                if (p1['EventTypeId'] < p2['EventTypeId']) {
+                  return -1;
+                }
+                return 0;
+              })
+              .map((p) => {
+                return ` * (${Staffsquared.EVENT_TYPES[p['EventTypeId']]}) **${p['FirstName']} ${p['LastName']}**`
+              });
             if (absenteeNames.length > 0) {
               chat(bot, info.channel, `<@${info.user.id}>: According to StaffSquared these people are out of office today:\n${absenteeNames.join('\n')}`);
             } else {
@@ -188,7 +284,7 @@ bot.on('message', (message) => {
           });
         } else {
           const dateRange = utils.date.textToDateRange(utils.date.midnightToday(), param);
-          if(!dateRange){
+          if (!dateRange) {
             return;
           }
 
@@ -209,8 +305,8 @@ bot.on('message', (message) => {
       Gitlab.branchList(null, info, (branchesString) => {
         const branches = JSON.parse(branchesString);
         const branchNames = branches.filter((b) => {
-            return new RegExp(gitlabConfig.releaseBranchPattern).test(b.name);
-          })
+          return new RegExp(gitlabConfig.releaseBranchPattern).test(b.name);
+        })
           .sort((a, b) => {
             return a.commit.committed_date < b.commit.committed_date ? 1 : (a.commit.committed_date > b.commit.committed_date ? -1 : 0);
           });
@@ -269,7 +365,7 @@ bot.on('message', (message) => {
 ${Object.values(helpCommands).join("\n")}
 
 ***(protected)** commands can only be issued from privileged channels and by privileged roles.*
-  * *Channels: ${discordConfig.channelWhitelist.map((r)=>{return `#${r}`}).join(', ')}*
+  * *Channels: ${discordConfig.channelWhitelist.map((r) => { return `#${r}` }).join(', ')}*
   * *Roles:  ${discordConfig.roleWhitelist.join(', ')}*
 
 In addition, I respond to plain english requests that contain the words:
@@ -278,8 +374,8 @@ In addition, I respond to plain english requests that contain the words:
 If anyone asks what the release branch is I'll try to find the latest one too!`);
   }, null, "This info");
 
-  if(!wasPoke){
-    if(!pokedBy[msgInfo.user.id]){
+  if (!wasPoke) {
+    if (!pokedBy[msgInfo.user.id]) {
       pokedBy[msgInfo.user.id] = {
         times: 0
       }

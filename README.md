@@ -11,6 +11,7 @@ A bot that lets you interact with various tools via Discord
   * Check who's on holiday
 * Jira
   * Turn issue mentions into links
+* Debt system (to figure out who owes what to who)
 
 # Set up
 1. Create a discord app with a bot: https://discordapp.com/developers/applications/

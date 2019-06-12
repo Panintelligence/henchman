@@ -2,6 +2,16 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.3.0] - 2019-06-12
+### Added
+- `!ignore @user` to make Henchman ignore a user.
+- Debt/Award system!
+To interact with this system:
+* Use `!give` or `!award` to promise to give something to another person. If you owe Neil two beers, type `!give beer @neil-user-code 2`.
+* Use `!payoff` or `!revoke` to consider a promised item given to you. If Steve gave you one beer, type `!payoff beer @steve-user-code`.
+* Use `!owed` to see what stuff you're owed.
+* Use `!owe` to see what stuff you owe to other people.
+
 ## [1.2.0] - 2019-06-12
 ### Changed
 - Now using [`discord.js`](https://discord.js.org/) instead of the outdated [`discord.io`](https://github.com/izy521/discord.io#readme)
