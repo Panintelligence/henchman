@@ -87,18 +87,17 @@ bot.once('ready', (evt) => {
 
 const pokedBy = {};
 
-const ignoredUserIds = [];
+let ignoredUserIds = [];
+
+let muted = false;
 
 const awards = new AwardManager();
-if(awards.load()){
+if (awards.load()) {
   logger.warn("Unable to load saved files.")
 }
 
 bot.on('message', (message) => {
-  if (message.author.id === bot.user.id) {
-    return;
-  }
-  if (ignoredUserIds.includes(message.author.id)) {
+  if (message.author.id === bot.user.id || ignoredUserIds.includes(message.author.id)) {
     return;
   }
 
@@ -114,6 +113,26 @@ bot.on('message', (message) => {
   };
 
   let wasPoke = false;
+
+  unprotectedCommand(msgInfo, _.triggers.unmute,
+    (info, command, match) => {
+      if (muted) {
+        muted = false;
+        chat(bot, info.channel, `Thanks, <@${info.user.id}>. It's good to be back.`);
+      }
+    }, null, "Tell me to speak again.");
+
+  if (muted) {
+    return;
+  }
+
+  unprotectedCommand(msgInfo, _.triggers.mute,
+    (info, command, match) => {
+      muted = true;
+      const messages = ["Wait! Let me jus-", "But I di-", "Mmmfmmm!!! Mmmfmmfmmm!!!", ":zipper_mouth:", `I'll just shut up then, <@${info.user.id}>...`]
+      const pick = Math.floor(Math.random() * messages.length);
+      chat(bot, info.channel, messages[pick]);
+    }, null, "Tell me to shut up.");
 
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
@@ -150,9 +169,33 @@ bot.on('message', (message) => {
       } else if (mentionedUser === info.channel.guild.owner.user.id) {
         chat(bot, info.channel, `I cannot ignore my master, <@${info.user.id}>.`);
       } else {
-        chat(bot, info.channel, `All right, <@${info.user.id}>. Ignoring <@${mentionedUser}> from now on.`);
+        if (!ignoredUserIds.includes(mentionedUser)) {
+          ignoredUserIds.push(mentionedUser);
+          chat(bot, info.channel, `All right, <@${info.user.id}>. Ignoring <@${mentionedUser}> from now on.`);
+        }
       }
     }, "<@user-reference>", "Tell me to ignore a user");
+
+  unprotectedCommand(msgInfo, _.triggers.unignore,
+    (info, command, match) => {
+      let mentionedUser = null;
+      if (info.message.indexOf(command) !== -1) {
+        mentionedUser = (info.message.split(command)[1] || "").trim().replace(/<@/g, "").replace(/>/g, "") || null;
+        if (!_.userInServer(info.channel.guild, mentionedUser)) {
+          mentionedUser = null;
+        }
+      }
+      if (mentionedUser === null) {
+        chat(bot, info.channel, `You need to \`@\` a user for me to ignore.\nFor example: \`!listen @code-ginger-ninja#9811\``);
+      } else {
+        if (ignoredUserIds.includes(mentionedUser)) {
+          ignoredUserIds = ignoredUserIds.filter((id) => {
+            return id !== mentionedUser;
+          });
+          chat(bot, info.channel, `All right, <@${info.user.id}>. I'll listen to <@${mentionedUser}> again.`);
+        }
+      }
+    }, "<@user-reference>", "Tell me to start listening to a previously ignored user.");
 
   unprotectedCommand(msgInfo, _.triggers.award,
     (info, command, match) => {
@@ -206,7 +249,7 @@ bot.on('message', (message) => {
   unprotectedCommand(msgInfo, _.triggers.owed,
     (info, command, match) => {
       const stuffOwed = awards.formatOwings(awards.getItemsOwedToUser(info.user.id), info.channel.guild);
-      if(stuffOwed === null){
+      if (stuffOwed === null) {
         chat(bot, info.channel, `No one owes you anything, <@${info.user.id}>.`);
       } else {
         chat(bot, info.channel, `This is what people owe you, <@${info.user.id}>:\n${stuffOwed}`);
@@ -216,7 +259,7 @@ bot.on('message', (message) => {
   unprotectedCommand(msgInfo, _.triggers.owe,
     (info, command, match) => {
       const stuffOwed = awards.formatOwings(awards.getItemsUserOwes(info.user.id), info.channel.guild);
-      if(stuffOwed === null){
+      if (stuffOwed === null) {
         chat(bot, info.channel, `You don't owe anything to anybody, <@${info.user.id}>.`);
       } else {
         chat(bot, info.channel, `This is what you owe others, <@${info.user.id}>:\n${stuffOwed}`);

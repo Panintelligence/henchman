@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [1.3.0] - 2019-06-12
 ### Added
 - `!ignore @user` to make Henchman ignore a user.
+
+- `!listen @user` to make Henchman unignore a user.
+
+- `!mute` make Henchman shut up.
+
+- `!unmute` let Henchman talk again.
+
 - Debt/Award system!
 To interact with this system:
 * Use `!give` or `!award` to promise to give something to another person. If you owe Neil two beers, type `!give beer @neil-user-code 2`.

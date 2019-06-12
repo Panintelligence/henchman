@@ -50,6 +50,18 @@ const triggers = {
     commands: ['!ignore'],
     regex: null
   },
+  unignore: {
+    commands: ['!listen', '!unignore'],
+    regex: null
+  },
+  mute: {
+    commands: ['!mute'],
+    regex: null
+  },
+  unmute: {
+    commands: ['!unmute'],
+    regex: null
+  },
   jiraProjects: {
     commands: jiraConfig.projects.map(p => `!${p.code}`),
     regex: new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|\\W|$)`, 'gim'),
