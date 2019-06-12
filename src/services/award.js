@@ -74,11 +74,11 @@ const AwardManager = function () {
     };
 
     self.getItemsOwedToUser = function (recipient) {
-        return owed[recipient];
+        return owed[recipient] || {};
     };
 
     self.getItemsUserOwes = function (sender) {
-        return owes[sender];
+        return owes[sender] || {};
     };
 
     self.formatOwings = function(owings, guild) {
