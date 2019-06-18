@@ -62,6 +62,10 @@ const triggers = {
     commands: ['!unmute'],
     regex: null
   },
+  food: {
+    commands: ['!food', '!order'],
+    regex: null
+  },
   jiraProjects: {
     commands: jiraConfig.projects.map(p => `!${p.code}`),
     regex: new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|\\W|$)`, 'gim'),

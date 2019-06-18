@@ -13,6 +13,7 @@ const Jira = require('./services/jira');
 const Staffsquared = require('./services/staffsquared');
 const CloudflareStatus = require('./services/cloudflare-status');
 const AwardManager = require('./services/award');
+const FoodOrder = require('./services/food');
 const chat = require('./utils/discord-chat');
 const utils = require('./utils/utils');
 const _ = require('./services/bot');
@@ -91,6 +92,7 @@ let ignoredUserIds = [];
 
 let muted = false;
 
+const foodOrders = new FoodOrder();
 const awards = new AwardManager();
 if (awards.load()) {
   logger.warn("Unable to load saved files.")
@@ -133,6 +135,28 @@ bot.on('message', (message) => {
       const pick = Math.floor(Math.random() * messages.length);
       chat(bot, info.channel, messages[pick]);
     }, null, "Tell me to shut up.");
+
+  unprotectedCommand(msgInfo, _.triggers.food,
+    (info, command, match) => {
+      const food = (info.message.split(command)[1] || "").trim() || null;
+      if(!food){
+        const allOrders = foodOrders.formattedOrders();
+        if(!allOrders){
+          chat(bot, info.channel, `No orders registered so far.`);
+        } else {
+          chat(bot, info.channel, `Food orders for today:\n${allOrders}`);
+        }
+      } else if (food === "done"){
+        foodOrders.clear();
+        chat(bot, info.channel, `Food orders cleared.`);
+      } else if (food === "cancel"){
+        foodOrders.cancel(info.user.id);
+        chat(bot, info.channel, `Your order was cancelled, <@${info.user.id}>.`);
+      } else {
+        foodOrders.order(info.user.id, food);
+        chat(bot, info.channel, `Added ${food} for <@${info.user.id}> to the lunch order. You can view the whole order with \`!food\``);
+      }
+    }, "[|done|cancel|<food order>]", "Order food, check what's being ordered, or use `!food cancel` to cancel your order. To complete (and clear) a group of orders type `!food done`");
 
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
@@ -219,7 +243,7 @@ bot.on('message', (message) => {
         chat(bot, info.channel, `<@${info.user.id}> now owes <@${mentionedUser}> ${totalQuantity}x ${awardedItem}`);
       }
       awards.save();
-    }, "<item> <@recipient-user-reference> [|quantity]", "Award a user x items. If quantity is left empty (or is 0 or less), it defaults to 1.");
+    }, "<item> <@recipient-user-reference> [|<quantity>]", "Award a user x items. If quantity is left empty (or is 0 or less), it defaults to 1.");
 
   unprotectedCommand(msgInfo, _.triggers.payoff,
     (info, command, match) => {
@@ -244,7 +268,7 @@ bot.on('message', (message) => {
         }
         awards.save();
       }
-    }, "<item> <@sender-user-reference> [|quantity]", "Consider x items owed to you by a user paid off. If quantity is left empty (or is 0 or less), it defaults to 1.");
+    }, "<item> <@sender-user-reference> [|<quantity>]", "Consider x items owed to you by a user paid off. If quantity is left empty (or is 0 or less), it defaults to 1.");
 
   unprotectedCommand(msgInfo, _.triggers.owed,
     (info, command, match) => {
@@ -341,7 +365,7 @@ bot.on('message', (message) => {
           });
         }
       }
-    }, "[|today|tomorrow|this week|next week]", "See who's out");
+    }, "[|<today>|<tomorrow>|<this week>|<next week>]", "See who's out");
 
   protectedCommand(msgInfo, _.triggers.release,
     (info, command, match) => {
@@ -364,7 +388,7 @@ bot.on('message', (message) => {
         filter = (info.message.split(command)[1] || "").trim();
       }
       Gitlab.branchList(filter, info);
-    }, "[|filter]", "I'll list all the branches in git. Optionally pass a filter to \"grep\" by");
+    }, "[|<filter>]", "I'll list all the branches in git. Optionally pass a filter to \"grep\" by");
 
   protectedCommand(msgInfo, _.triggers.build,
     (info, command, match) => {
@@ -372,7 +396,7 @@ bot.on('message', (message) => {
       const branch = match[7] || b || jenkinsConfig.defaultBranch;
       chat(info.bot, info.channel, `Sure, <@${info.user.id}>. I've asked Jenkins to build from \`${branch}\`.`);
       Jenkins.requestBuild(branch, info);
-    }, "[|branch]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);
+    }, "[|<branch>]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);
 
   protectedCommand(msgInfo, _.triggers.cancelBuild,
     (info, command, match) => {
@@ -395,7 +419,7 @@ bot.on('message', (message) => {
           chat(info.bot, info.channel, `I've cancelled build number ${number}, <@${info.user.id}>.`);
         });
       }
-    }, "[|build|queue] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
+    }, "[|<build>|<queue>] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
 
   unprotectedCommand(msgInfo, _.triggers.cloudflareStatus,
     (info, command, match) => {

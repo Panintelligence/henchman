@@ -11,6 +11,12 @@ if [ ! -d "$CONFIG_DIR" ]; then
     sudo chown $USER "$CONFIG_DIR"
 fi
 
+# In case you don't have volumes set up
+if [[ "$1" == "rebuild" ]] || [[ "$1" == "rebuildall" ]]; then
+	docker cp ${NAME}:/code/henchman-discord-bot/bot/owed.json .
+	docker cp ${NAME}:/code/henchman-discord-bot/bot/owes.json .
+fi
+
 if [[ "$1" == "rebuild" ]]; then
   docker stop "${NAME}" && docker rm "${NAME}"
 fi
