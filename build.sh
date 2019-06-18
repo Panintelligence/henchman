@@ -12,7 +12,7 @@ if [ ! -d "$CONFIG_DIR" ]; then
 fi
 
 # In case you don't have volumes set up
-if [[ "$1" == "rebuild" ]] || [[ "$1" == "rebuildall" ]]; then
+if [[ "$2" == "backup" ]]; then
 	docker cp ${NAME}:/code/henchman-discord-bot/bot/owed.json .
 	docker cp ${NAME}:/code/henchman-discord-bot/bot/owes.json .
 fi
@@ -39,4 +39,14 @@ docker run \
 	--add-host parent:${PARENT} \
 	-v ${CONFIG_DIR}:/code/henchman-builder-bot \
 	-tdi \
-	"${IMAGE}" "$2"
+	"${IMAGE}"
+
+if [[ "$2" == "backup" ]]; then
+	if [[ -f ./owed.json ]]; then
+		docker cp owed.json ${NAME}:/code/henchman-discord-bot/bot/
+	fi
+	if [[ -f ./owes.json ]]; then
+		docker cp owes.json ${NAME}:/code/henchman-discord-bot/bot/
+	fi
+	docker restart ${NAME}
+fi

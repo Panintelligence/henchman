@@ -88,7 +88,7 @@ const AwardManager = function () {
 
         const things = Object.keys(owings).map((item) => {
             const quantitiesPerPerson = Object.keys(owings[item]).map((person) => {
-                return `    * ${Bot.userIDToUser(person, guild).displayName}: ${owings[item][person]}`;
+                return `    * ${(Bot.userIDToUser(person, guild) || {displayName:person}).displayName}: ${owings[item][person]}`;
             });
             return `  * ${item}: \n${quantitiesPerPerson.join('\n')}`;
         });
