@@ -227,17 +227,17 @@ bot.on('message', (message) => {
       let mentionedUser = null;
       let quantity = 1;
       if (info.message.indexOf(command) !== -1) {
-        const msg = (info.message.split(command)[1] || "").trim().split(' ');
+        const msg = (info.message.split(command)[1] || "").replace(/\s\s+/g, ' ').trim().split(' ');
         awardedItem = (msg[0] || "").trim() || null;
         mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
-        quantity = Number((msg[2] || "").trim()) || 1;
+        quantity = Number((msg[2] || "").trim().replace("x", "")) || 1;
         if (!_.userInServer(info.channel.guild, mentionedUser)) {
           mentionedUser = null;
         }
       }
 
       if (mentionedUser === null || awardedItem === null || quantity <= 0) {
-        chat(bot, info.channel, `You need to \`@\` someone and specify what item to award (and how much as long as it's a positive number).\nFor example: \`!award beer @code-ginger-ninja#9811\` 10`);
+        chat(bot, info.channel, `You need to \`@\` someone and specify what item to award (and how much as long as it's a positive number).\nFor example: \`!award beer @code-ginger-ninja#9811 10\``);
       } else {
         const totalQuantity = awards.give(info.user.id, mentionedUser, awardedItem, quantity);
         chat(bot, info.channel, `<@${info.user.id}> now owes <@${mentionedUser}> ${totalQuantity}x ${awardedItem}`);
@@ -251,14 +251,14 @@ bot.on('message', (message) => {
       let mentionedUser = null;
       let quantity = 1;
       if (info.message.indexOf(command) !== -1) {
-        const msg = (info.message.split(command)[1] || "").trim().split(' ');
+        const msg = (info.message.split(command)[1] || "").replace(/\s\s+/g, ' ').trim().split(' ');
         awardedItem = (msg[0] || "").trim() || null;
         mentionedUser = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
-        quantity = Number((msg[2] || "").trim()) || 1;
+        quantity = Number((msg[2] || "").trim().replace("x", "")) || 1;
       }
 
       if (mentionedUser === null || awardedItem === null || quantity <= 0) {
-        chat(bot, info.channel, `You need to \`@\` someone and specify what item to award (and how much as long as it's a positive number).\nFor example: \`!payoff beer @code-ginger-ninja#9811\` 10`);
+        chat(bot, info.channel, `You need to \`@\` someone and specify what item to award (and how much as long as it's a positive number).\nFor example: \`!payoff beer @code-ginger-ninja#9811 10\``);
       } else {
         const totalQuantity = awards.removeDebt(mentionedUser, info.user.id, awardedItem, quantity);
         if (totalQuantity === false) {

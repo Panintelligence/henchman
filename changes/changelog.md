@@ -2,7 +2,14 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [1.3.0] - 2019-06-18
+## [1.3.2] - 2019-06-19
+### Changed
+- `!give` mechanics now support quantities to be given as `x5` or `5x` instead of just `5`.
+
+### Fixed
+- `!give` mechanics now ignore extraneous whitespace
+
+## [1.3.1] - 2019-06-18
 ### Added
 - `!food` to build and check a food order.
 To use this functionality do:
