@@ -138,7 +138,7 @@ bot.on('message', (message) => {
 
   unprotectedCommand(msgInfo, _.triggers.food,
     (info, command, match) => {
-      const food = (info.message.split(command)[1] || "").trim() || null;
+      const food = (info.message.split(command)[1] || "").replace(/\s\s+/g, ' ').trim() || null;
       if(!food){
         const allOrders = foodOrders.formattedOrders();
         if(!allOrders){
