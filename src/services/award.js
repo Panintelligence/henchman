@@ -1,6 +1,7 @@
 
 const fs = require('fs');
 const Bot = require('./bot');
+const Persist = require('./persist');
 
 const AwardManager = function () {
     let owed = {};
@@ -96,31 +97,13 @@ const AwardManager = function () {
     }
 
     self.save = function () {
-        try {
-            fs.writeFileSync('./owes.json', JSON.stringify(owes), 'utf-8');
-            fs.writeFileSync('./owed.json', JSON.stringify(owed), 'utf-8');
-        } catch (e) {
-            return false;
-        }
-
-        return true;
+        return Persist.save('./owes.json', JSON.stringify(owes)) && Persist.save('./owed.json', JSON.stringify(owed));
     };
 
     self.load = function () {
-        let wentWell = true;
-        try {
-            owes = JSON.parse(fs.readFileSync('./owes.json'));
-        } catch (e) {
-            owes = {};
-            wentWell = false;
-        }
-        try {
-            owed = JSON.parse(fs.readFileSync('./owed.json'));
-        } catch (e) {
-            owed = {};
-            wentWell = false;
-        }
-        return wentWell;
+        owes = Persist.load('./owes.json');
+        owed = Persist.load('./owed.json');
+        return owes !== null && owed !== null;
     };
 };
 

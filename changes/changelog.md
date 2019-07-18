@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.3.3] - 2019-07-05
+### Added
+- `!food` now has a `who` option to see who ordered what.
+
+- `!remindme` lets henchman remind you of something on a particular date, or when someone speaks.
+
+
 ## [1.3.2] - 2019-06-19
 ### Changed
 - `!give` mechanics now support quantities to be given as `x5` or `5x` instead of just `5`.

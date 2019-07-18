@@ -22,7 +22,7 @@ const userInServer = (server, userID) => {
 };
 
 const userIDToUser = (userID, server) => {
-  return server.members.array().find(m => m.id === userID);
+  return server.members.array().find(m => m.id === userID) || {id: userID, displayName: userID};
 };
 
 const triggers = {

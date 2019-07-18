@@ -1,5 +1,4 @@
 
-const fs = require('fs');
 const Bot = require('./bot');
 
 const FoodOrder = function () {
@@ -15,10 +14,12 @@ const FoodOrder = function () {
             _orders[f] = [];
         }
         _orders[f].push(userID);
+        self.save();
     };
 
     self.clear = function () {
         _orders = {};
+        self.save();
     };
 
     self.cancel = function (userID) {
@@ -37,19 +38,32 @@ const FoodOrder = function () {
         toRemove.forEach((food)=>{
             delete _orders[food];
         });
+        self.save();
     };
 
-    self.formattedOrders = function() {
+    self.formattedOrders = function(withPeople, guild) {
         if(Object.keys(_orders).length === 0){
             return null;
         }
 
         const orders = Object.keys(_orders).map((food) => {
-            return `  * ${food}: ${_orders[food].length}`
+            if(withPeople){
+                return `  * ${food}: x${_orders[food].length} (${_orders[food].map((id)=>{return Bot.userIDToUser(id, guild)}).join(", ")})`
+            }
+            return `  * ${food} x${_orders[food].length}`
         });
         
         return orders.join('\n')
     }
+
+    self.save = function () {
+        return Persist.save('./food.json', JSON.stringify(_orders));
+    };
+
+    self.load = function () {
+        _orders = Persist.load('./food.json');
+        return _orders !== null;
+    };
 };
 
 module.exports = FoodOrder

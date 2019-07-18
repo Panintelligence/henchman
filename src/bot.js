@@ -93,9 +93,12 @@ let ignoredUserIds = [];
 let muted = false;
 
 const foodOrders = new FoodOrder();
+if (foodOrders.load()) {
+  logger.warn("Unable to load saved Food Order files.")
+}
 const awards = new AwardManager();
 if (awards.load()) {
-  logger.warn("Unable to load saved files.")
+  logger.warn("Unable to load saved Awards files.")
 }
 
 bot.on('message', (message) => {
@@ -139,8 +142,8 @@ bot.on('message', (message) => {
   unprotectedCommand(msgInfo, _.triggers.food,
     (info, command, match) => {
       const food = (info.message.split(command)[1] || "").replace(/\s\s+/g, ' ').trim() || null;
-      if(!food){
-        const allOrders = foodOrders.formattedOrders();
+      if(!food || food === "who"){
+        const allOrders = foodOrders.formattedOrders(!!food, info.channel.guild);
         if(!allOrders){
           chat(bot, info.channel, `No orders registered so far.`);
         } else {
@@ -156,7 +159,7 @@ bot.on('message', (message) => {
         foodOrders.order(info.user.id, food);
         chat(bot, info.channel, `Added ${food} for <@${info.user.id}> to the lunch order. You can view the whole order with \`!food\``);
       }
-    }, "[|done|cancel|<food order>]", "Order food, check what's being ordered, or use `!food cancel` to cancel your order. To complete (and clear) a group of orders type `!food done`");
+    }, "[|done|cancel|who|<food order>]", "Order food, check what's being ordered, or use `!food cancel` to cancel your order. To complete (and clear) a group of orders type `!food done`");
 
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
