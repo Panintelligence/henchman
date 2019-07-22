@@ -549,7 +549,7 @@ bot.on('message', (message) => {
     }, null, "Check if there's a cloudflare problem");
 
   unprotectedCommand(msgInfo, _.triggers.help, (info, command, match) => {
-    chat(info.bot, info.channel, `I send you a PM with all the commands, <@${info.user.id}>.`);
+    chat(info.bot, info.channel, `I sent you a PM with all the commands, <@${info.user.id}>.`);
     chat(info.bot, info.user, `Commands:`);
     const allCommands = [];
     let partialCommands = [];
