@@ -1,6 +1,15 @@
 #!/bin/bash
 
-CONFIG_DIR="/var/discordbot"
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+CONFIG_DIR="${DIR}/src/config"
+PERSIST_DIR="${DIR}/src/persisted"
 IMAGE="henchman-discord-bot"
 NAME="henchman-discord-bot"
 PARENT=`ip route show | grep docker0 | awk '{print \$9}'`
@@ -9,14 +18,6 @@ if [ ! -d "$CONFIG_DIR" ]; then
     sudo mkdir -p "$CONFIG_DIR"
     sudo chmod 777 "$CONFIG_DIR"
     sudo chown $USER "$CONFIG_DIR"
-fi
-
-# In case you don't have volumes set up
-if [[ "$2" == "backup" ]]; then
-	rm -rf backup-persisted
-	docker cp ${NAME}:/code/henchman-discord-bot/bot/persisted .
-	mv persisted/* backup-persisted
-	rm -rf persisted
 fi
 
 if [[ "$1" == "rebuild" ]]; then
@@ -39,14 +40,7 @@ docker run \
 	--restart unless-stopped \
 	--name "${NAME}" \
 	--add-host parent:${PARENT} \
-	-v ${CONFIG_DIR}:/code/henchman-builder-bot \
+	-v ${CONFIG_DIR}:/code/henchman-discord-bot/bot/config \
+	-v ${PERSIST_DIR}:/code/henchman-discord-bot/bot/persisted \
 	-tdi \
 	"${IMAGE}"
-
-if [[ "$2" == "backup" ]]; then
-	cd backup-persisted
-	docker exec ${NAME} mkdir -p /code/henchman-discord-bot/bot/persisted
-	docker cp * ${NAME}:/code/henchman-discord-bot/bot/persisted
-	docker restart ${NAME}
-	cd ..
-fi
