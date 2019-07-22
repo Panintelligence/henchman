@@ -3,5 +3,4 @@ node_modules
 **/*.prod.json
 **/*.test.json
 notes.md
-owed.json
-owes.json
+persisted
