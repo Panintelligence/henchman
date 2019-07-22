@@ -1,7 +1,15 @@
+const PERSIST_DIRECTORY = 'persisted';
+
+const ensureDirectory = function() {
+    if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+    }
+}
 
 const save = function (filename, jsonObject) {
     try {
-        fs.writeFileSync(filename, JSON.stringify(jsonObject), 'utf-8');
+        ensureDirectory();
+        fs.writeFileSync(`${PERSIST_DIRECTORY}/${filename}`, JSON.stringify(jsonObject), 'utf-8');
     } catch (e) {
         return false;
     }
@@ -12,7 +20,8 @@ const save = function (filename, jsonObject) {
 
 const load = function (filename) {
     try {
-        return JSON.parse(fs.readFileSync(filename));
+        ensureDirectory();
+        return JSON.parse(fs.readFileSync(`${PERSIST_DIRECTORY}/${filename}`));
     } catch (e) {
         return null;
     }

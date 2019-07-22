@@ -1,5 +1,6 @@
 {
   "token": "yourtokenhere",
+  "adminRoles": ["Admin"],
   "roleWhitelist": ["Developers", "DevOps", "Testers"],
   "channelWhitelist": ["dev", "test"]
 }

@@ -1,6 +1,13 @@
 const utils = require('../utils/utils');
 const jiraConfig = require('../config/jira-config.json');
 
+const isAdmin = (roleIds, adminRoles) => {
+  if (!roleIds) {
+    return false;
+  }
+  return utils.array.anyIntersection(roleIds, adminRoles);
+};
+
 const isPermitted = (channelId, roleIds, whitelistedChannels, whitelistedRoles) => {
   if (!roleIds || !channelId) {
     return false;
@@ -26,6 +33,10 @@ const userIDToUser = (userID, server) => {
 };
 
 const triggers = {
+  purge: {
+    commands: ['!purge'],
+    regex: null
+  },
   poke: {
     commands: ['!poke'],
     regex: /.* *(is |)(the |) *bot (is |)(on(line|)|around)\?/i
@@ -66,6 +77,10 @@ const triggers = {
     commands: ['!food', '!order'],
     regex: null
   },
+  reminder: {
+    commands: ['!remind'],
+    regex: null
+  },
   jiraProjects: {
     commands: jiraConfig.projects.map(p => `!${p.code}`),
     regex: new RegExp(`(^|\\s+)((${jiraConfig.projects.map(p => `${p.code}`).join('|')})-|)[0-9]+(\\s+|\\W|$)`, 'gim'),
@@ -103,6 +118,7 @@ const triggers = {
 
 module.exports = {
   isPermitted: isPermitted,
+  isAdmin: isAdmin,
   command: command,
   userInServer: userInServer,
   userIDToUser: userIDToUser,

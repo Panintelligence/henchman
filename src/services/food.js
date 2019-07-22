@@ -1,5 +1,6 @@
 
 const Bot = require('./bot');
+const Persist = require('./persist');
 
 const FoodOrder = function () {
     let _orders = {};
@@ -57,12 +58,16 @@ const FoodOrder = function () {
     }
 
     self.save = function () {
-        return Persist.save('./food.json', JSON.stringify(_orders));
+        return Persist.save('food.json', JSON.stringify(_orders));
     };
 
     self.load = function () {
-        _orders = Persist.load('./food.json');
-        return _orders !== null;
+        _orders = Persist.load('food.json');
+        const success = _orders !== null;
+        if(!success){
+            _orders = {};
+        }
+        return success;
     };
 };
 

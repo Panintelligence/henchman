@@ -2,12 +2,34 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [1.3.3] - 2019-07-05
+## [1.3.3] - 2019-07-22
 ### Added
 - `!food` now has a `who` option to see who ordered what.
 
-- `!remindme` lets henchman remind you of something on a particular date, or when someone speaks.
+- `!remind` lets henchman remind you of something on a particular date, or when someone speaks.
 
+- `!purge` will remove one or more messages from a channel (optionally belonging to one particular user)
+For example, to delete the last 3 messages that Kieran sent, do:
+```
+!purge @Kieran Jennings 3
+```
+
+- Added admin-protected commands.
+
+The Admin role can be configured in `config/discord-config.json` file:
+```json
+{
+  "token": "yourtokenhere",
+  "adminRoles": ["Admin"],
+  "roleWhitelist": ["Developers", "DevOps", "Testers"],
+  "channelWhitelist": ["dev", "test"]
+}
+```
+
+### Changed
+- `!mute`, `!unmute`, `!purge`, `!ignore` and `!unignore` are now admin-level.
+
+- `!food` orders are no longer wiped when Henchman restarts.
 
 ## [1.3.2] - 2019-06-19
 ### Changed

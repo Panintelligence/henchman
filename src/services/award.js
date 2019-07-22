@@ -97,13 +97,21 @@ const AwardManager = function () {
     }
 
     self.save = function () {
-        return Persist.save('./owes.json', JSON.stringify(owes)) && Persist.save('./owed.json', JSON.stringify(owed));
+        return Persist.save('owes.json', JSON.stringify(owes)) && Persist.save('owed.json', JSON.stringify(owed));
     };
 
     self.load = function () {
-        owes = Persist.load('./owes.json');
-        owed = Persist.load('./owed.json');
-        return owes !== null && owed !== null;
+        owes = Persist.load('owes.json');
+        owed = Persist.load('owed.json');
+        owesSuccess = owes !== null;
+        owedSuccess = owed !== null;
+        if(!owesSuccess){
+            owes = {};
+        }
+        if(!owedSuccess){
+            owed = {};
+        }
+        return owesSuccess && owedSuccess;
     };
 };
 

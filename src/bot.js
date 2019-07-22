@@ -14,15 +14,23 @@ const Staffsquared = require('./services/staffsquared');
 const CloudflareStatus = require('./services/cloudflare-status');
 const AwardManager = require('./services/award');
 const FoodOrder = require('./services/food');
+const Reminder = require('./services/reminder');
 const chat = require('./utils/discord-chat');
 const utils = require('./utils/utils');
 const _ = require('./services/bot');
 
 const SERVERS = {};
+const ADMIN_ROLES = {};
 const WHITELISTED_ROLES = {};
 const WHITELISTED_CHANNELS = {};
 
 const helpCommands = {};
+
+const isAdmin = (info) => {
+  return info.serverId &&
+    _.isAdmin(info.roleIds,
+      ADMIN_ROLES[info.serverId])
+};
 
 const isPermitted = (info) => {
   return info.serverId &&
@@ -50,6 +58,16 @@ const protectedCommand = (info, triggers, f, params, description) => {
   }
 };
 
+const adminCommand = (info, triggers, f, params, description) => {
+  const commands = triggers.commands.map((c) => {
+    return `**\`${c}\`**`
+  }).join(" or ");
+  helpCommands[triggers.commands.join('|')] = `  * ${commands} ${params ? params + '' : ''} - **(admin)** ${description}`;
+  if (isAdmin(info)) {
+    _.command(info, triggers.commands, triggers.regex, f);
+  }
+};
+
 // Configure logger settings
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
@@ -63,14 +81,23 @@ const bot = new Discord.Client({
 });
 bot.login(discordConfig.token);
 
+let reminder = null;
+
 bot.once('ready', (evt) => {
   logger.info('Connected');
   logger.info('Logged in as: ');
   logger.info(bot.user.username + ' - (' + bot.user.id + ')');
   bot.guilds.array().forEach((server) => {
     SERVERS[server.id] = server;
+    ADMIN_ROLES[server.id] = [];
     WHITELISTED_ROLES[server.id] = [];
     WHITELISTED_CHANNELS[server.id] = [];
+
+    server.roles.array().forEach((role) => {
+      if (discordConfig.adminRoles.includes(role.name)) {
+        ADMIN_ROLES[server.id].push(role.id);
+      }
+    });
 
     server.roles.array().forEach((role) => {
       if (discordConfig.roleWhitelist.includes(role.name)) {
@@ -84,6 +111,12 @@ bot.once('ready', (evt) => {
       }
     });
   });
+
+  reminder = new Reminder(bot);
+  if (reminder.load()) {
+    logger.warn("Unable to load saved Reminder files.")
+  }
+  reminder.checkTimeReminders();
 });
 
 const pokedBy = {};
@@ -119,7 +152,11 @@ bot.on('message', (message) => {
 
   let wasPoke = false;
 
-  unprotectedCommand(msgInfo, _.triggers.unmute,
+  reminder.getUserTriggers(msgInfo.user.id).forEach((memo)=>{
+    chat(bot, msgInfo.channel, `Reminder <@${memo.userToRemind}>:\n${memo.messages.map((m)=>{return m.message}).join('\n')}`);
+  });
+
+  adminCommand(msgInfo, _.triggers.unmute,
     (info, command, match) => {
       if (muted) {
         muted = false;
@@ -130,14 +167,38 @@ bot.on('message', (message) => {
   if (muted) {
     return;
   }
-
-  unprotectedCommand(msgInfo, _.triggers.mute,
+  
+  adminCommand(msgInfo, _.triggers.mute,
     (info, command, match) => {
       muted = true;
       const messages = ["Wait! Let me jus-", "But I di-", "Mmmfmmm!!! Mmmfmmfmmm!!!", ":zipper_mouth:", `I'll just shut up then, <@${info.user.id}>...`]
       const pick = Math.floor(Math.random() * messages.length);
       chat(bot, info.channel, messages[pick]);
     }, null, "Tell me to shut up.");
+
+
+  adminCommand(msgInfo, _.triggers.purge,
+    (info, command, match) => {
+      const msg = info.message.split(/\s/);
+      const userId = (msg.length >= 2 ? msg[1] : "any") || "any";
+      const mentionedUser = userId.trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
+      const numberOfMessages = (msg.length >= 3 ? msg[2] : 1) || 1;
+      let messages = info.channel.messages.array();
+      if (mentionedUser !== "any"){
+        messages = info.channel.messages.array().filter((channelMessage) => {
+          return channelMessage.author.id === mentionedUser;
+        });
+      }
+      for(var i=(messages.length - numberOfMessages); i<messages.length; i++){
+        messages[i].delete()
+          .then((m) => {
+            console.log(`Deleted ${m.author.username}'s "${m.content}"`);
+          })
+          .catch(console.error);
+      }
+      chat(bot, info.user, "Deleted messages.");
+    }, "[any|<@user-reference>] [|<X number of messages>]", "Purge the last X messages in a channel (or the last X messages from a user in a channel).");
+  
 
   unprotectedCommand(msgInfo, _.triggers.food,
     (info, command, match) => {
@@ -161,6 +222,64 @@ bot.on('message', (message) => {
       }
     }, "[|done|cancel|who|<food order>]", "Order food, check what's being ordered, or use `!food cancel` to cancel your order. To complete (and clear) a group of orders type `!food done`");
 
+  unprotectedCommand(msgInfo, _.triggers.reminder,
+    (info, command, match) => {
+      let userToRemind = null;
+      let trigger = null;
+      let reminderMessage = null;
+      let type = null;
+      if (info.message.indexOf(command) !== -1) {
+        const msg = (info.message.split(command)[1] || "").replace(/\s\s+/g, ' ').trim().split(' ');
+        // Look for user to remind
+        userToRemind = (msg[0] || "").trim() || null;
+        if (userToRemind !== null) {
+          userToRemind = userToRemind === "me" ? info.user.id : userToRemind;
+          if (!_.userInServer(info.channel.guild, userToRemind)) {
+            userToRemind = null;
+          }
+        }
+        // Look for trigger & type of trigger
+        if ((msg[1] || "").trim().indexOf('<@') != -1){
+          type = "user";
+          trigger = (msg[1] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
+          if (!_.userInServer(info.channel.guild, trigger)) {
+            trigger = null;
+          }
+        } else {
+          type = "date";
+          trigger = (msg[1] || "").trim() || null;
+          if(trigger !== null){
+            const date = trigger.split('.')[0];
+            const time = trigger.split('.')[1] || "09:00";
+            trigger = new Date(`${date} ${time}`);
+          }
+        }
+        // Reminder message
+        reminderMessage = (msg[2] || "").trim() || null;
+      }
+
+      const errors = [];
+
+      if (userToRemind === null){
+        errors.push("You need to @ someone or use 'me' as an alias.")
+      }
+      if (trigger === null || trigger.toString() === "Invalid Date"){
+        errors.push("You need to provide a date in the `YYYY-MM-DD.HH:mm` format or @ someone to use as a trigger for the reminder.")
+      }
+      if (reminderMessage === null){
+        errors.push("You need to tell me what to remind about")
+      }
+
+      if (errors.length > 0) {
+        chat(bot, info.channel, errors.join('\n'));
+      } else {
+        reminder.remind(info.user.id, trigger, type, reminderMessage, info.channel.id);
+        const when = type === 'date' ? `at ${trigger}` : `when <@${trigger}> speaks`
+        const who = info.user.id === userToRemind ? 'you' : `<@${userToRemind}>`;
+        chat(bot, info.channel, `Sure <@${info.user.id}>, I'll remind ${who} with "${reminderMessage}" ${when}.`);
+      }
+    }, "[me|<@user-to-remind>] [<time-to-trigger-reminder>|<@user-to-trigger-reminder>] <text-to-remind>", "Set reminders for yourself or someone else. I can remind you at a certain time or when someone speaks on any channel. Dates come in the `YYYY-MM-DD` or `YYYY-MM-DD.HH:MM` (when time is not provided it defaults to 09:00).");
+
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
       if (!pokedBy[info.user.id]) {
@@ -182,7 +301,7 @@ bot.on('message', (message) => {
       wasPoke = true;
     }, null, "Check if I'm around");
 
-  unprotectedCommand(msgInfo, _.triggers.ignore,
+  adminCommand(msgInfo, _.triggers.ignore,
     (info, command, match) => {
       let mentionedUser = null;
       if (info.message.indexOf(command) !== -1) {
@@ -203,7 +322,7 @@ bot.on('message', (message) => {
       }
     }, "<@user-reference>", "Tell me to ignore a user");
 
-  unprotectedCommand(msgInfo, _.triggers.unignore,
+  adminCommand(msgInfo, _.triggers.unignore,
     (info, command, match) => {
       let mentionedUser = null;
       if (info.message.indexOf(command) !== -1) {
@@ -451,6 +570,9 @@ bot.on('message', (message) => {
     });
     chat(info.bot, info.user, `
 ----
+***(admin)** commands can only be issued by admin-privileged roles.*
+  * *Roles:  ${discordConfig.adminRoles.join(', ')}*
+
 ***(protected)** commands can only be issued from privileged channels and by privileged roles.*
   * *Channels: ${discordConfig.channelWhitelist.map((r) => { return `#${r}` }).join(', ')}*
   * *Roles:  ${discordConfig.roleWhitelist.join(', ')}*
