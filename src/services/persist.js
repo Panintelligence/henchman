@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const PERSIST_DIRECTORY = './persisted';
 
 const ensureDirectory = function(dir) {

@@ -13,8 +13,10 @@ fi
 
 # In case you don't have volumes set up
 if [[ "$2" == "backup" ]]; then
-	docker cp ${NAME}:/code/henchman-discord-bot/bot/owed.json .
-	docker cp ${NAME}:/code/henchman-discord-bot/bot/owes.json .
+	rm -rf backup-persisted
+	docker cp ${NAME}:/code/henchman-discord-bot/bot/persisted .
+	mv persisted/* backup-persisted
+	rm -rf persisted
 fi
 
 if [[ "$1" == "rebuild" ]]; then
@@ -42,11 +44,9 @@ docker run \
 	"${IMAGE}"
 
 if [[ "$2" == "backup" ]]; then
-	if [[ -f ./owed.json ]]; then
-		docker cp owed.json ${NAME}:/code/henchman-discord-bot/bot/
-	fi
-	if [[ -f ./owes.json ]]; then
-		docker cp owes.json ${NAME}:/code/henchman-discord-bot/bot/
-	fi
+	cd backup-persisted
+	docker exec ${NAME} mkdir -p /code/henchman-discord-bot/bot/persisted
+	docker cp * ${NAME}:/code/henchman-discord-bot/bot/persisted
 	docker restart ${NAME}
+	cd ..
 fi
