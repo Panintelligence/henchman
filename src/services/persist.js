@@ -1,4 +1,4 @@
-const PERSIST_DIRECTORY = 'persisted';
+const PERSIST_DIRECTORY = './persisted';
 
 const ensureDirectory = function() {
     if (!fs.existsSync(dir)){
@@ -8,7 +8,7 @@ const ensureDirectory = function() {
 
 const save = function (filename, jsonObject) {
     try {
-        ensureDirectory();
+        ensureDirectory(PERSIST_DIRECTORY);
         fs.writeFileSync(`${PERSIST_DIRECTORY}/${filename}`, JSON.stringify(jsonObject), 'utf-8');
     } catch (e) {
         return false;
@@ -20,7 +20,7 @@ const save = function (filename, jsonObject) {
 
 const load = function (filename) {
     try {
-        ensureDirectory();
+        ensureDirectory(PERSIST_DIRECTORY);
         return JSON.parse(fs.readFileSync(`${PERSIST_DIRECTORY}/${filename}`));
     } catch (e) {
         return null;
