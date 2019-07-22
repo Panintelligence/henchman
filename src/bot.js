@@ -251,7 +251,13 @@ bot.on('message', (message) => {
           if(trigger !== null){
             const date = trigger.split('.')[0];
             const time = trigger.split('.')[1] || "09:00";
-            trigger = new Date(`${date} ${time}`);
+            if(date === "tomorrow"){
+              date = utils.dateUtils.addDays(utils.dateUtils.midnightToday(), 1);
+              date.setHours(9);
+              trigger = date;
+            } else {
+              trigger = new Date(`${date} ${time}`);
+            }
           }
         }
         // Reminder message
@@ -278,7 +284,7 @@ bot.on('message', (message) => {
         const who = info.user.id === userToRemind ? 'you' : `<@${userToRemind}>`;
         chat(bot, info.channel, `Sure <@${info.user.id}>, I'll remind ${who} with "${reminderMessage}" ${when}.`);
       }
-    }, "[me|<@user-to-remind>] [<time-to-trigger-reminder>|<@user-to-trigger-reminder>] <text-to-remind>", "Set reminders for yourself or someone else. I can remind you at a certain time or when someone speaks on any channel. Dates come in the `YYYY-MM-DD` or `YYYY-MM-DD.HH:MM` (when time is not provided it defaults to 09:00).");
+    }, "[me|<@user-to-remind>] [<time-to-trigger-reminder>|<@user-to-trigger-reminder>|tomorrow] <text-to-remind>", "Set reminders for yourself or someone else. I can remind you at a certain time or when someone speaks on any channel. Dates come in the `YYYY-MM-DD` or `YYYY-MM-DD.HH:MM` (when time is not provided it defaults to 09:00).");
 
   unprotectedCommand(msgInfo, _.triggers.poke,
     (info, command, match) => {
