@@ -1,6 +1,6 @@
 const PERSIST_DIRECTORY = './persisted';
 
-const ensureDirectory = function() {
+const ensureDirectory = function(dir) {
     if (!fs.existsSync(dir)){
         fs.mkdirSync(dir);
     }
