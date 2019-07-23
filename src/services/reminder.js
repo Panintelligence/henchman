@@ -27,6 +27,9 @@ const Reminder = function (bot) {
                 user: {}
             };
         }
+        if(!_reminders[userID][type]){
+            _reminders[userID][type] = {};
+        }
         if(!_reminders[userID][type][trigger]){
             _reminders[userID][type][trigger] = [];
         }
@@ -68,7 +71,8 @@ const Reminder = function (bot) {
     self.getUserTriggers = function(userID) {
         const triggers = [];
         Object.keys(_reminders).forEach((userToRemind) => {
-            if(userID in _reminders[userToRemind]["user"]){
+            let remindersToCheck = _reminders[userToRemind]["user"] || {};
+            if(userID in remindersToCheck){
                 triggers.push({
                     userToRemind: userToRemind,
                     messages: _reminders[userToRemind]["user"][userID] || []
@@ -82,7 +86,7 @@ const Reminder = function (bot) {
     self.getDateTriggers = function(date) {
         const triggers = [];
         Object.keys(_reminders).forEach((userToRemind) => {
-            Object.keys(_reminders[userToRemind]["date"]).forEach((dateToRemind) => {
+            Object.keys(_reminders[userToRemind]["date"]||{}).forEach((dateToRemind) => {
                 if(new Date(dateToRemind) <= new Date(date)){
                     triggers.push({
                         date: dateToRemind,
@@ -96,7 +100,7 @@ const Reminder = function (bot) {
     };
 
     self.save = function () {
-        return Persist.save('reminders.json', JSON.stringify(_reminders));
+        return Persist.save('reminders.json', _reminders);
     };
 
     self.load = function () {

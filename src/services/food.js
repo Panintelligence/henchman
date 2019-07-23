@@ -58,7 +58,7 @@ const FoodOrder = function () {
     }
 
     self.save = function () {
-        return Persist.save('food.json', JSON.stringify(_orders));
+        return Persist.save('food.json', _orders);
     };
 
     self.load = function () {

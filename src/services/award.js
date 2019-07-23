@@ -97,7 +97,7 @@ const AwardManager = function () {
     }
 
     self.save = function () {
-        return Persist.save('owes.json', JSON.stringify(owes)) && Persist.save('owed.json', JSON.stringify(owed));
+        return Persist.save('owes.json', owes) && Persist.save('owed.json', owed);
     };
 
     self.load = function () {

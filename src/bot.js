@@ -231,7 +231,7 @@ bot.on('message', (message) => {
       if (info.message.indexOf(command) !== -1) {
         const msg = (info.message.split(command)[1] || "").replace(/\s\s+/g, ' ').trim().split(' ');
         // Look for user to remind
-        userToRemind = (msg[0] || "").trim() || null;
+        userToRemind = (msg[0] || "").trim().replace(/<@/g, "").replace(/>/g, "").replace(/!/, "") || null;
         if (userToRemind !== null) {
           userToRemind = userToRemind === "me" ? info.user.id : userToRemind;
           if (!_.userInServer(info.channel.guild, userToRemind)) {
@@ -267,7 +267,7 @@ bot.on('message', (message) => {
       const errors = [];
 
       if (userToRemind === null){
-        errors.push("You need to @ someone or use 'me' as an alias.")
+        errors.push("You need to @ someone or use `me` as an alias.")
       }
       if (trigger === null || trigger.toString() === "Invalid Date"){
         errors.push("You need to provide a date in the `YYYY-MM-DD.HH:mm` format or @ someone to use as a trigger for the reminder.")
