@@ -2,6 +2,13 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.3.3] - 2019-07-23
+### Added
+- `!remind` now works with `tomorrow` as a value.
+
+### Changed
+- Changed the build script to use volumes automatically.
+
 ## [1.3.3] - 2019-07-22
 ### Added
 - `!food` now has a `who` option to see who ordered what.
