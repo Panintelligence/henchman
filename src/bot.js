@@ -249,7 +249,7 @@ bot.on('message', (message) => {
           type = "date";
           trigger = (msg[1] || "").trim() || null;
           if(trigger !== null){
-            const date = trigger.split('.')[0];
+            let date = trigger.split('.')[0];
             const time = trigger.split('.')[1] || "09:00";
             if(date === "tomorrow"){
               date = utils.date.addDays(utils.date.midnightToday(), 1);
