@@ -261,7 +261,7 @@ bot.on('message', (message) => {
           }
         }
         // Reminder message
-        reminderMessage = (msg[2] || "").trim() || null;
+        reminderMessage = (msg.slice(2) || "").join(' ').trim() || null;
       }
 
       const errors = [];
