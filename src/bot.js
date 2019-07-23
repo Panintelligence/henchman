@@ -279,7 +279,7 @@ bot.on('message', (message) => {
       if (errors.length > 0) {
         chat(bot, info.channel, errors.join('\n'));
       } else {
-        reminder.remind(info.user.id, trigger, type, reminderMessage, info.channel.id);
+        reminder.remind(userToRemind, trigger, type, reminderMessage, info.channel.id);
         const when = type === 'date' ? `at ${trigger}` : `when <@${trigger}> speaks`
         const who = info.user.id === userToRemind ? 'you' : `<@${userToRemind}>`;
         chat(bot, info.channel, `Sure <@${info.user.id}>, I'll remind ${who} with "${reminderMessage}" ${when}.`);

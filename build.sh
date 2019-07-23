@@ -34,8 +34,6 @@ if [[ "$HAS_IMAGE" == "" ]]; then
 	docker build -t ${IMAGE} .
 fi
 
-cp -r ./src/* "$CONFIG_DIR/bot"
-
 docker run \
 	--restart unless-stopped \
 	--name "${NAME}" \
