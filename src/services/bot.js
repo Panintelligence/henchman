@@ -102,7 +102,7 @@ const triggers = {
     commands: ['!build'],
     regex: null
   },
-  build: {
+  merges: {
     commands: ['!merges'],
     regex: null
   },
