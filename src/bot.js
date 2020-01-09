@@ -523,7 +523,7 @@ bot.on('message', (message) => {
 
   protectedCommand(msgInfo, _.triggers.merges,
     (info, command, match) => {
-      chat(info.bot, info.channel, ``);
+      Gitlab.listOpenMerges();
     }, null, `Lists all open merge requests on gitlab.`);
 
   unprotectedCommand(msgInfo, _.triggers.cloudflareStatus,

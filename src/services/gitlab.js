@@ -113,7 +113,7 @@ const createBuild = (branch, project) => {
   }).end();
 }
 
-const listOpenMerges = (branch, project) => {
+const listOpenMerges = () => {
   makeGitlabRequest('POST', `/api/v4/projects/merge_requests?state=opened`, null, (response) => {
     const pipelineResponse = JSON.parse(response);
     if(!!pipelineResponse && pipelineResponse.length > 0){
@@ -136,6 +136,7 @@ const gitlab = {
     })).end();
   },
   createBuild: createBuild,
+  listOpenMerges: listOpenMerges,
   "_": {
     createBranchesMessages: createBranchesMessages,
     createListOfBranches: createListOfBranches,
