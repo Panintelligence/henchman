@@ -34,7 +34,6 @@ const makeGitlabRequest = (method, path, body, callback, onRequest) => {
   }));
 };
 
-
 const createBranchesMessages = (branchNames, msgInfo) => {
   if (msgInfo && msgInfo.channel && msgInfo.user && branchNames) {
     if (branchNames.length > 10) {
@@ -100,6 +99,31 @@ const createListOfBranches = (branches, filter) => {
   });
 }
 
+const createBuild = (branch, project) => {
+  const triggerToken = gitlabConfig.pipelineTriggers[project];
+  makeGitlabRequest('POST', `/api/v4/projects/${project}/trigger/pipeline?token=${triggerToken}ref=master&variables[BRANCH]=${branch}`, null, (response) => {
+    const pipelineResponse = JSON.parse(response);
+    if("web_url" in pipelineResponse){
+      makeGitlabRequest('GET', `/api/v4/projects/${project}/pipelines/${pipelineResponse}`, null, callback || ((pipeline)=>{
+        chat(msgInfo.bot, m.channel, `Building ${branch}: ${pipeline.status} (${pipeline["web_url"]})`);
+      }));
+    } else {
+      chat(msgInfo.bot, m.channel, "I couldn't trigger that pipeline :(");
+    }
+  }).end();
+}
+
+const listOpenMerges = (branch, project) => {
+  makeGitlabRequest('POST', `/api/v4/projects/merge_requests?state=opened`, null, (response) => {
+    const pipelineResponse = JSON.parse(response);
+    if(!!pipelineResponse && pipelineResponse.length > 0){
+      const mergeUrls = pipelineResponse.map(m => m.web_url);
+      chat(msgInfo.bot, m.channel, `I found these open merge requests:\n${mergeUrls.join('\n')}`);
+    } else {
+      chat(msgInfo.bot, m.channel, `There are no open merge requests.`);
+    }
+  }).end();
+}
 
 const gitlab = {
   branchList: (filter, msgInfo, callback) => {
@@ -111,6 +135,7 @@ const gitlab = {
       });
     })).end();
   },
+  createBuild: createBuild,
   "_": {
     createBranchesMessages: createBranchesMessages,
     createListOfBranches: createListOfBranches,
