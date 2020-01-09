@@ -113,14 +113,14 @@ const createBuild = (branch, project) => {
   }).end();
 }
 
-const listOpenMerges = () => {
+const listOpenMerges = (msgInfo) => {
   makeGitlabRequest('POST', `/api/v4/projects/merge_requests?state=opened`, null, (response) => {
     const pipelineResponse = JSON.parse(response);
     if(!!pipelineResponse && pipelineResponse.length > 0){
       const mergeUrls = pipelineResponse.map(m => m.web_url);
-      chat(msgInfo.bot, m.channel, `I found these open merge requests:\n${mergeUrls.join('\n')}`);
+      chat(msgInfo.bot, msgInfo.channel, `I found these open merge requests:\n${mergeUrls.join('\n')}`);
     } else {
-      chat(msgInfo.bot, m.channel, `There are no open merge requests.`);
+      chat(msgInfo.bot, msgInfo.channel, `There are no open merge requests.`);
     }
   }).end();
 }
