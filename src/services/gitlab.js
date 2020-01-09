@@ -114,7 +114,7 @@ const createBuild = (branch, project) => {
 }
 
 const listOpenMerges = (msgInfo) => {
-  makeGitlabRequest('POST', `/api/v4/projects/merge_requests?state=opened`, null, (response) => {
+  makeGitlabRequest('GET', `/api/v4/merge_requests?state=opened`, null, (response) => {
     const pipelineResponse = JSON.parse(response);
     if(!!pipelineResponse && pipelineResponse.length > 0){
       const mergeUrls = pipelineResponse.map(m => m.web_url);
