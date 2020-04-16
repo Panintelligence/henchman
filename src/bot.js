@@ -1,13 +1,11 @@
 'use strict';
 
 const discordConfig = require('./config/discord-config.json');
-const jenkinsConfig = require('./config/jenkins-config.json');
 const jiraConfig = require('./config/jira-config.json');
 const gitlabConfig = require('./config/gitlab-config.json');
 
 const Discord = require('discord.js');
 const logger = require('winston');
-const Jenkins = require('./services/jenkins');
 const Gitlab = require('./services/gitlab');
 const Jira = require('./services/jira');
 const Staffsquared = require('./services/staffsquared');
@@ -520,34 +518,13 @@ bot.on('message', (message) => {
 
   protectedCommand(msgInfo, _.triggers.build,
     (info, command, match) => {
-      const b = info.message.indexOf(command) !== -1 ? info.message.split(command)[1].trim() : null;
-      const branch = match[7] || b || jenkinsConfig.defaultBranch;
-      chat(info.bot, info.channel, `Sure, <@${info.user.id}>. I've asked Jenkins to build from \`${branch}\`.`);
-      Jenkins.requestBuild(branch, info);
-    }, "[|<branch>]", `I'll ask jenkins to initiate a build (if \`branch\` is not provided then I'll use \`${jenkinsConfig.defaultBranch}\``);
+      chat(info.bot, info.channel, `Gitlab's probably already doing it...`);
+    }, null, `Gitlab's automation takes care of this now.`);
 
-  protectedCommand(msgInfo, _.triggers.cancelBuild,
+  protectedCommand(msgInfo, _.triggers.merges,
     (info, command, match) => {
-      let number = "";
-      let type = "";
-      if (info.message.indexOf(command) !== -1) {
-        const params = info.message.split(command)[1].trim().split(/ +/);
-        type = params.length > 1 ? params[0] : 'build';
-        number = params.length > 1 ? params[1] : params[0];
-      } else {
-        type = match[2];
-        number = match[4];
-      }
-      if (type.toLowerCase() === 'queue') {
-        Jenkins.cancelQueue(number, () => {
-          chat(info.bot, info.channel, `I've cancelled queue item ${number}, <@${info.user.id}>.`);
-        });
-      } else {
-        Jenkins.cancelBuild(number, () => {
-          chat(info.bot, info.channel, `I've cancelled build number ${number}, <@${info.user.id}>.`);
-        });
-      }
-    }, "[|<build>|<queue>] <number>", "I will cancel a build or a queue item. If \`build\` or \`queue\` is not provided, I'll assume it's a build number");
+      Gitlab.listOpenMerges(msgInfo);
+    }, null, `Lists all open merge requests on gitlab.`);
 
   unprotectedCommand(msgInfo, _.triggers.cloudflareStatus,
     (info, command, match) => {

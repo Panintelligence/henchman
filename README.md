@@ -2,11 +2,9 @@
 A bot that lets you interact with various tools via Discord
 
 # Features
-* Jenkins
-  * Start builds
-  * Cancel builds
 * Gitlab integration
   * List branches
+  * Start builds
 * Staffsquared
   * Check who's on holiday
 * Jira
@@ -34,25 +32,6 @@ Clone the `discord-config.json.template` into `discord-config.json` and fill the
   "channelWhitelist": ["Discord Channels That Can Trigger Actions"]
 }
 ```
-
-## jenkins-config.json
-Clone the `jenkins-config.json.template` into `jenkins-config.json` and fill the following settings:
-```json
-{
-  "protocol": "https",
-  "host": "your.host.name",
-  "project": "your-project",
-  "user": "your-jenkins-user",
-  "token": "your-jenkins-token",
-  "defaultBranch": "master",
-  "defaultBuildParams": [
-      { "name": "STRING_PARAM", "value": "string value" },
-      { "name": "STRING_PARAM_WITH_VARIABLE", "value": "[[variable]]" },
-      { "name": "BOOLEAN_PARAM", "value": true }
-    ]
-}
-```
-The `defaultBuildParams` accept the `branch` variable via the notation: `[[variable]]`.
 
 ## gitlab-config.json
 Clone the `gitlab-config.json.template` into `gitlab-config.json` and fill the following settings:

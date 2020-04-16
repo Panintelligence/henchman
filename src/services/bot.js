@@ -100,11 +100,11 @@ const triggers = {
   },
   build: {
     commands: ['!build'],
-    regex: /.* *(start|can I have a|make) .* *(build)(\s|\W|$)+((on|for|from|) *(`|)((?!please\b)\b\w+)(`|)|)/i
+    regex: null
   },
-  cancelBuild: {
-    commands: ['!cancel'],
-    regex: /.* *(cancel) .* *(build|queue) *(`|)((?!please\b)\b\w+)(`|)/i
+  merges: {
+    commands: ['!merges'],
+    regex: null
   },
   cloudflareStatus: {
     commands: ['!argo', '!cloudflare'],

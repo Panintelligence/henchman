@@ -3,5 +3,9 @@
   "host": "your.host.here",
   "projectId": 0,
   "token": "your-gitlab-token",
-  "releaseBranchPattern": "[0-9].[0-9].[0-9]])"
+  "releaseBranchPattern": "[0-9].[0-9].[0-9]])",
+  "pipelineTriggers": {
+    "1": "trigger-token-here",
+    "2": "trigger-token-here"
+  }
 }

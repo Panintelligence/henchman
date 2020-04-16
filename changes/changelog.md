@@ -2,6 +2,14 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.4.0] - 2019-07-23
+### Added
+- `!cookie` To give Henchman a cookie when it behaves well.
+
+### Changed
+- `!build` now uses gitlab.
+
+
 ## [1.3.3] - 2019-07-23
 ### Added
 - `!remind` now works with `tomorrow` as a value.
